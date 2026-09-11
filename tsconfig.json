@@ -1,0 +1,14 @@
+{
+  "files": [],
+  "references": [
+    {
+      "path": "packages/core/tsconfig.json"
+    },
+    {
+      "path": "packages/kafkajs/tsconfig.json"
+    },
+    {
+      "path": "packages/confluent/tsconfig.json"
+    }
+  ]
+}

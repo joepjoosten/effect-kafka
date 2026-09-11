@@ -1,0 +1,44 @@
+name: Check
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  check:
+    name: Build, types, tests, examples
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: pnpm build
+      - run: pnpm check
+      - run: pnpm test
+      - run: pnpm check:examples
+      - run: bash scripts/pack-smoke.sh
+  integration:
+    name: Kafka broker integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - name: Start Kafka
+        run: |
+          docker run -d --name kafka -p 9092:9092 apache/kafka:4.0.0
+          for attempt in $(seq 1 30); do
+            if docker exec kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list; then exit 0; fi
+            sleep 2
+          done
+          docker logs kafka
+          exit 1
+      - run: pnpm test:integration
+      - name: Broker logs
+        if: failure()
+        run: docker logs kafka

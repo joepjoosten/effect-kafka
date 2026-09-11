@@ -1,0 +1,7 @@
+# @effect-kafka/core
+
+Shared Effect services and adapter contracts for Kafka.
+
+Targets `effect@4.0.0-rc.112`.
+
+See the [repository documentation](https://github.com/joepjoosten/effect-kafka#readme) for installation, producer/consumer examples, resource lifetime, offset handling, and error semantics.

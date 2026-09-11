@@ -1,0 +1,54 @@
+{
+  "name": "@effect-kafka/kafkajs",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "MIT",
+  "description": "Scoped KafkaJS producer and consumer layers for Effect",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/joepjoosten/effect-kafka.git",
+    "directory": "packages/kafkajs"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "tsc -b tsconfig.build.json",
+    "check": "tsc -b tsconfig.json",
+    "test": "vitest --run"
+  },
+  "dependencies": {
+    "@effect-kafka/core": "workspace:^"
+  },
+  "peerDependencies": {
+    "effect": "4.0.0-rc.112",
+    "kafkajs": "^2.2.4"
+  },
+  "devDependencies": {
+    "@effect/vitest": "4.0.0-rc.112",
+    "@types/node": "^25.7.0",
+    "effect": "4.0.0-rc.112",
+    "typescript": "^6.0.3",
+    "vitest": "4.1.4",
+    "kafkajs": "2.2.4"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

@@ -9,3 +9,5 @@ packages/*/.tsbuildinfo
 packages/*/build
 packages/*/dist
 *.log
+
+*.tsbuildinfo
