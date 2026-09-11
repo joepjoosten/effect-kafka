@@ -6,7 +6,8 @@
     [
       "@effect-kafka/core",
       "@effect-kafka/kafkajs",
-      "@effect-kafka/confluent"
+      "@effect-kafka/confluent",
+      "@effect-kafka/native"
     ]
   ],
   "linked": [],

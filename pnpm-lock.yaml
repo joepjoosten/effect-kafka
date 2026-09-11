@@ -101,6 +101,28 @@ importers:
         specifier: 4.1.4
         version: 4.1.4(@types/node@25.9.6)(vite@8.3.0(@types/node@25.9.6))
 
+  packages/native:
+    dependencies:
+      '@effect-kafka/core':
+        specifier: workspace:^
+        version: link:../core
+    devDependencies:
+      '@effect/vitest':
+        specifier: 4.0.0-rc.112
+        version: 4.0.0-rc.112(effect@4.0.0-rc.112)(vitest@4.1.4(@types/node@25.9.6)(vite@8.3.0(@types/node@25.9.6)))
+      '@types/node':
+        specifier: ^25.7.0
+        version: 25.9.6
+      effect:
+        specifier: 4.0.0-rc.112
+        version: 4.0.0-rc.112
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: 4.1.4
+        version: 4.1.4(@types/node@25.9.6)(vite@8.3.0(@types/node@25.9.6))
+
 packages:
 
   '@babel/runtime@7.29.7':

@@ -9,6 +9,9 @@
     },
     {
       "path": "packages/confluent/tsconfig.build.json"
+    },
+    {
+      "path": "packages/native/tsconfig.build.json"
     }
   ]
 }
