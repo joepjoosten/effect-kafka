@@ -51,6 +51,9 @@
       ],
       "@effect-kafka/confluent": [
         "./packages/confluent/src/index.ts"
+      ],
+      "@effect-kafka/native": [
+        "./packages/native/src/index.ts"
       ]
     }
   }

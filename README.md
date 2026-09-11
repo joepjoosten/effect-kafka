@@ -7,6 +7,7 @@ Effect-native Kafka producer and consumer services for **Effect 4.0.0-rc.112**.
 | `@effect-kafka/core` | Shared services, message types, typed errors, and adapter contracts |
 | `@effect-kafka/kafkajs` | KafkaJS producer and consumer layers |
 | `@effect-kafka/confluent` | Confluent's librdkafka-backed producer and consumer layers |
+| `@effect-kafka/native` | Native Kafka protocol producer using Effect and Node TCP/TLS |
 
 Kafka transport is independent of serialization. Use JSON, bytes, Protobuf, or the
 `Uint8Array` produced by [`@effect-avro/kafka`](https://github.com/joepjoosten/effect-avro).
@@ -52,7 +53,7 @@ const program = Effect.gen(function*() {
 await Effect.runPromise(program)
 ```
 
-A producer connects when its layer is acquired and disconnects when that scope
+A KafkaJS or Confluent producer connects when its layer is acquired and disconnects when that scope
 closes. Provide the layer around the lifetime of your application to reuse its
 connection. `send` accepts strings, `Uint8Array` values, null tombstones, keys,
 partitions, timestamps, and repeated headers, and returns delivery reports.
@@ -102,6 +103,22 @@ already succeeded cannot be undone by a subsequent handler failure.
 `fromBeginning` applies when the group has no valid committed offset. For long
 KafkaJS handlers, call `yield* record.heartbeat` periodically and configure session
 timeouts appropriately. Confluent manages heartbeats internally.
+
+## Native producer (no Kafka client dependency)
+
+```sh
+pnpm add @effect-kafka/core @effect-kafka/native effect@4.0.0-rc.112
+```
+
+Use the same `Producer` service with `Native.producerLayer({ brokers: ["kafka:29092"] })`,
+imported from `@effect-kafka/native`. The native package implements the Kafka wire
+protocol itself using Effect and Node TCP/TLS. It supports keyed and explicit
+partitioning, uncompressed record batches, headers, and tombstones.
+
+This first implementation is producer-only. It uses a scoped socket per request
+and serializes sends; it has no connection pool, SASL, compression, transactions,
+or idempotent retries. See [native package documentation](packages/native/README.md)
+for configuration, supported protocol versions, and delivery semantics.
 
 ## Confluent adapter
 
@@ -154,6 +171,6 @@ CI runs both adapters against Apache Kafka, including binary payloads, repeated
 headers, tombstones, and explicit offset commits. Unit tests cover lifecycle,
 cancellation, handler errors, backpressure, and adapter conversion.
 
-Use `pnpm changeset` for releasable changes. The three packages version together.
+Use `pnpm changeset` for releasable changes. The four packages version together.
 The release workflow opens a Changesets version PR when needed and publishes
 unpublished versions on `main` using the GitHub Actions `NPM_TOKEN` secret.
