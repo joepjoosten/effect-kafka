@@ -10,7 +10,7 @@ const mock = vi.hoisted(() => {
     subscribe: vi.fn(async (_subscription: unknown) => {}),
     run: vi.fn(async (_config: any) => {}),
     commitOffsets: vi.fn(async (_offsets: unknown) => {}),
-    events: { CRASH: "crash" }, on: vi.fn(() => () => {})
+    events: { CRASH: "crash" }, on: vi.fn((_event: string, _listener: (event: { payload: { restart: boolean; error: unknown } }) => void) => () => {})
   }
   const makeProducer = vi.fn((_config: unknown) => producer)
   const makeConsumer = vi.fn((_config: unknown) => consumer)
@@ -64,5 +64,22 @@ test("commits the next offset without rounding large Kafka offsets", async () =>
     { topic: "events", partition: 2, offset: "9007199254740994" }
   ])
   expect(mock.consumer.subscribe).toHaveBeenCalledWith({ topics: ["events"], fromBeginning: true })
+  expect(mock.consumer.disconnect).toHaveBeenCalledOnce()
+})
+
+test("allows restartable crashes to recover and surfaces only terminal crashes", async () => {
+  const transient = new Error("coordinator loading")
+  const terminal = new Error("retries exhausted")
+  mock.consumer.run.mockImplementationOnce(async () => {
+    const listener = mock.consumer.on.mock.calls[0]![1]
+    listener({ payload: { restart: true, error: transient } })
+    queueMicrotask(() => listener({ payload: { restart: false, error: terminal } }))
+  })
+  const error = await Effect.runPromise(Consumer.pipe(
+    Effect.flatMap((consumer) => consumer.consume({ topics: ["events"] }, () => Effect.void)),
+    Effect.provide(consumerLayer({ client, consumer: { groupId: "test" } })),
+    Effect.flip
+  ))
+  expect(error).toMatchObject({ operation: "consumer.run", cause: terminal })
   expect(mock.consumer.disconnect).toHaveBeenCalledOnce()
 })

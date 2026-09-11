@@ -47,7 +47,9 @@ export const consumerLayer = (options: ConsumerOptions) => Core.consumerLayer((s
       topics: [...subscription.topics],
       ...(subscription.fromBeginning === undefined ? {} : { fromBeginning: subscription.fromBeginning })
     }),
-    onFailure: (fail) => consumer.on(consumer.events.CRASH, (event) => fail(event.payload.error)),
+    onFailure: (fail) => consumer.on(consumer.events.CRASH, (event) => {
+      if (!event.payload.restart) fail(event.payload.error)
+    }),
     run: (handler) => consumer.run({
       autoCommit: options.autoCommit ?? true,
       ...(subscription.partitionsConsumedConcurrently === undefined ? {} : {

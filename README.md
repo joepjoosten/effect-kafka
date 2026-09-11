@@ -90,7 +90,8 @@ parallelism across partitions.
 The driver callback resolves only after its handler succeeds. A handler failure
 ends consumption, preserves the original Effect failure, and rejects the driver
 callback. Shutdown interrupts active handlers, waits for their finalizers, then
-disconnects. KafkaJS crash events also fail the consuming Effect. Confluent handles
+disconnects. Terminal KafkaJS crash events also fail the consuming Effect; restartable crashes
+are recovered by KafkaJS according to its retry configuration. Confluent handles
 broker recovery internally; its start and handler failures are surfaced here.
 
 KafkaJS enables auto-commit by default. For manual commits, set `autoCommit: false`
