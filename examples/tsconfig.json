@@ -1,0 +1,10 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": { "noEmit": true, "composite": false, "types": ["node"] },
+  "include": ["*.ts", "../integration/*.ts", "../vitest.integration.ts"],
+  "references": [
+    { "path": "../packages/core/tsconfig.build.json" },
+    { "path": "../packages/kafkajs/tsconfig.build.json" },
+    { "path": "../packages/confluent/tsconfig.build.json" }
+  ]
+}
