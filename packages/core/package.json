@@ -1,6 +1,6 @@
 {
   "name": "@effect-kafka/core",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "type": "module",
   "license": "MIT",
   "description": "Effect-native Kafka services, message types, and typed errors",
