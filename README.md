@@ -7,7 +7,7 @@ Effect-native Kafka producer and consumer services for **Effect 4.0.0-rc.112**.
 | `@effect-kafka/core` | Shared services, message types, typed errors, and adapter contracts |
 | `@effect-kafka/kafkajs` | KafkaJS producer and consumer layers |
 | `@effect-kafka/confluent` | Confluent's librdkafka-backed producer and consumer layers |
-| `@effect-kafka/native` | Native Kafka protocol producer using Effect and Node TCP/TLS |
+| `@effect-kafka/native` | Native producers, consumers, SASL, compression and transactions |
 
 Kafka transport is independent of serialization. Use JSON, bytes, Protobuf, or the
 `Uint8Array` produced by [`@effect-avro/kafka`](https://github.com/joepjoosten/effect-avro).
@@ -15,7 +15,7 @@ This project is separate from the existing `effect-kafka` npm package.
 
 ## Install
 
-Choose one adapter. Node 24 is used in CI; Node 22+ is required.
+Choose one adapter. Node 24 is used in CI; Node 22+ is required (22.15+ for the native adapter).
 
 ```sh
 pnpm add @effect-kafka/core @effect-kafka/kafkajs kafkajs effect@4.0.0-rc.112
@@ -105,21 +105,19 @@ already succeeded cannot be undone by a subsequent handler failure.
 KafkaJS handlers, call `yield* record.heartbeat` periodically and configure session
 timeouts appropriately. Confluent manages heartbeats internally.
 
-## Native producer (no Kafka client dependency)
+## Native Kafka (no Kafka client dependency)
 
 ```sh
 pnpm add @effect-kafka/core @effect-kafka/native effect@4.0.0-rc.112
 ```
 
-Use the same `Producer` service with `Native.producerLayer({ brokers: ["kafka:29092"] })`,
-imported from `@effect-kafka/native`. The native package implements the Kafka wire
-protocol itself using Effect and Node TCP/TLS. It supports keyed and explicit
-partitioning, uncompressed record batches, headers, and tombstones.
+Use `Native.producerLayer` and `Native.consumerLayer` from `@effect-kafka/native`
+with the shared `Producer` and `Consumer` services. The native implementation
+supports classic consumer groups, SASL PLAIN/SCRAM, TLS, gzip/Zstandard, and
+scoped transactions through `Native.Transactions` and `Native.transactionLayer`.
 
-This first implementation is producer-only. It uses a scoped socket per request
-and serializes sends; it has no connection pool, SASL, compression, transactions,
-or idempotent retries. See [native package documentation](packages/native/README.md)
-for configuration, supported protocol versions, and delivery semantics.
+It uses scoped sockets per request. See the [native documentation](packages/native/README.md)
+for examples, transactional offset commits, supported protocols, and limitations.
 
 ## Confluent adapter
 
@@ -153,8 +151,8 @@ The wrapper adds no send retries. Interrupting an Effect cannot cancel an alread
 submitted Kafka send; delivery may still occur. Connect and subscribe wait for
 their driver promises before cleanup, so configure finite client timeouts.
 Consumers can redeliver messages after failures. Make processing idempotent where
-needed. Transactions, admin operations, batch handlers, and exactly-once processing
-are outside the initial API.
+needed. The native adapter exposes Kafka transactions separately; admin operations and
+batch handlers are outside the shared API.
 
 ## Development and releases
 
@@ -168,7 +166,7 @@ pnpm check:examples
 pnpm test:integration
 ```
 
-CI runs both adapters against Apache Kafka, including binary payloads, repeated
+CI runs all adapters against Apache Kafka, including binary payloads, repeated
 headers, tombstones, and explicit offset commits. Unit tests cover lifecycle,
 cancellation, handler errors, backpressure, and adapter conversion.
 

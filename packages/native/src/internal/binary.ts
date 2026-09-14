@@ -20,6 +20,12 @@ export class Writer {
     return this.i16(b.length).raw(b)
   }
   bytes(value: Uint8Array): this { return this.i32(value.byteLength).raw(value) }
+  uvarint(value: number): this {
+    if (!Number.isInteger(value) || value < 0 || value > 0xffffffff) throw new Error("Invalid unsigned varint")
+    let n = value
+    do { this.raw(Buffer.from([(n & 127) | (n > 127 ? 128 : 0)])); n = Math.floor(n / 128) } while (n)
+    return this
+  }
   varint(value: bigint | number): this {
     const signed = BigInt(value)
     if (signed < -(1n << 63n) || signed >= 1n << 63n) throw new Error("Varint is outside signed int64 range")
@@ -59,6 +65,38 @@ export class Reader {
     const result: A[] = []
     for (let i = 0; i < count; i++) result.push(read())
     return result
+  }
+  uvarint(): number {
+    let n = 0
+    for (let i = 0; i < 5; i++) {
+      const b = this.take(1)[0]!
+      if (i === 4 && b > 15) throw new Error("Unsigned varint overflow")
+      n += (b & 127) * 2 ** (7 * i)
+      if (!(b & 128)) return n
+    }
+    throw new Error("Invalid unsigned varint")
+  }
+  varint(): bigint {
+    let n = 0n
+    for (let i = 0; i < 10; i++) {
+      const b = this.take(1)[0]!
+      if (i === 9 && b > 1) throw new Error("Signed varint overflow")
+      n |= BigInt(b & 127) << BigInt(7 * i)
+      if (!(b & 128)) return (n >> 1n) ^ -(n & 1n)
+    }
+    throw new Error("Invalid signed varint")
+  }
+  bytes(): Buffer | null { const size = this.i32(); return size === -1 ? null : this.take(size) }
+  tags(): void {
+    const count = this.uvarint()
+    if (count > this.remaining) throw new Error("Invalid tag count")
+    let previous = -1
+    for (let i = 0; i < count; i++) {
+      const tag = this.uvarint()
+      if (tag <= previous) throw new Error("Unordered Kafka tags")
+      previous = tag
+      this.take(this.uvarint())
+    }
   }
   end(): void { if (this.remaining !== 0) throw new Error("Unexpected trailing Kafka response bytes") }
 }

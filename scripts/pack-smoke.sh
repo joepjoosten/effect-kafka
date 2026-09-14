@@ -42,6 +42,9 @@ import { createRequire } from "node:module"
 import { Effect } from "effect"
 import { Producer } from "@effect-kafka/core"
 import * as Native from "@effect-kafka/native"
+assert.equal(typeof Native.consumerLayer, "function")
+assert.equal(typeof Native.transactionLayer, "function")
+assert.ok(Native.Transactions)
 const require = createRequire(import.meta.url)
 for (const client of ["kafkajs", "@confluentinc/kafka-javascript"]) {
   assert.throws(() => require.resolve(client), { code: "MODULE_NOT_FOUND" })

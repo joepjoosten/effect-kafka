@@ -25,19 +25,28 @@ jobs:
   integration:
     name: Kafka broker integration
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
       - name: Start Kafka
         run: |
-          docker run -d --name kafka -p 9092:9092 apache/kafka:4.0.0
+          docker run -d --name kafka -p 9092:9092 -p 9094:9094 \
+            -v "$PWD/integration/server.properties:/mnt/shared/config/server.properties:ro" \
+            --entrypoint /bin/bash apache/kafka:4.0.0 -c '
+              /opt/kafka/bin/kafka-storage.sh format -t MkU3OEVBNTcwNTJENDM2Qk -c /mnt/shared/config/server.properties &&
+              exec /opt/kafka/bin/kafka-server-start.sh /mnt/shared/config/server.properties'
+          ready=false
           for attempt in $(seq 1 30); do
-            if docker exec kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list; then exit 0; fi
+            if docker exec kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list; then ready=true; break; fi
             sleep 2
           done
-          docker logs kafka
-          exit 1
+          if [ "$ready" != true ]; then docker logs kafka; exit 1; fi
+          for mechanism in SCRAM-SHA-256 SCRAM-SHA-512; do
+            docker exec kafka /opt/kafka/bin/kafka-configs.sh --bootstrap-server localhost:9092 \
+              --alter --entity-type users --entity-name test \
+              --add-config "$mechanism=[iterations=4096,password=test-secret]"
+          done
       - run: pnpm test:integration
       - name: Broker logs
         if: failure()
