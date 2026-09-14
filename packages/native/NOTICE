@@ -3,3 +3,8 @@ Kafka 4.0.0 message definitions, Copyright The Apache Software Foundation,
 licensed under the Apache License, Version 2.0 (see LICENSE-APACHE).
 Source: https://github.com/apache/kafka/tree/4.0/clients/src/main/resources/common/message
 The layouts have been adapted into a TypeScript binary codec.
+
+SASLprep behavior in src/SaslPrep.ts is adapted from saslprep by Dmitry
+Tsvettsikh, distributed as @mongodb-js/saslprep under the MIT license
+(see LICENSE-SASLPREP). The local Unicode 3.2 range tables are regenerated
+from Python's standard-library stringprep implementation of RFC 3454.

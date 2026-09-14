@@ -1,5 +1,5 @@
 import { createHash, createHmac, pbkdf2, randomBytes, timingSafeEqual } from "node:crypto"
-import saslprep from "@mongodb-js/saslprep"
+import { prepareUnsafe as saslprep } from "../SaslPrep.js"
 import { Cause, Effect, Redacted } from "effect"
 import { KafkaError } from "@effect-kafka/core"
 import { Reader, Writer } from "./binary.js"

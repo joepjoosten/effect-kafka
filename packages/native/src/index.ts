@@ -6,3 +6,5 @@ export type { Compression } from "./internal/records.js"
 
 export { consumerLayer, type ConsumerOptions } from "./consumer.js"
 export { Transactions, transactionLayer, type Transaction, type TransactionOptions, type TransactionOffset } from "./transactions.js"
+
+export * as SaslPrep from "./SaslPrep.js"

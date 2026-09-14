@@ -45,8 +45,12 @@ import * as Native from "@effect-kafka/native"
 assert.equal(typeof Native.consumerLayer, "function")
 assert.equal(typeof Native.transactionLayer, "function")
 assert.ok(Native.Transactions)
+const SaslPrep = await import("@effect-kafka/native/SaslPrep")
+assert.equal(SaslPrep.prepare, Native.SaslPrep.prepare)
+assert.equal(await Effect.runPromise(SaslPrep.prepare("I\u00adX")), "IX")
+assert.equal(SaslPrep.prepareUnsafe("\u2168"), "IX")
 const require = createRequire(import.meta.url)
-for (const client of ["kafkajs", "@confluentinc/kafka-javascript"]) {
+for (const client of ["kafkajs", "@confluentinc/kafka-javascript", "@mongodb-js/saslprep", "sparse-bitfield", "memory-pager"]) {
   assert.throws(() => require.resolve(client), { code: "MODULE_NOT_FOUND" })
 }
 const result = await Effect.runPromise(Producer.pipe(

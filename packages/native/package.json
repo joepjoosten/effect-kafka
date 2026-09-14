@@ -14,7 +14,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./SaslPrep": {
+      "types": "./dist/SaslPrep.d.ts",
+      "import": "./dist/SaslPrep.js"
+    }
   },
   "types": "./dist/index.d.ts",
   "sideEffects": false,
@@ -24,7 +28,8 @@
     "CHANGELOG.md",
     "LICENSE",
     "NOTICE",
-    "LICENSE-APACHE"
+    "LICENSE-APACHE",
+    "LICENSE-SASLPREP"
   ],
   "publishConfig": {
     "access": "public",
@@ -36,8 +41,7 @@
     "test": "vitest --run"
   },
   "dependencies": {
-    "@effect-kafka/core": "workspace:^",
-    "@mongodb-js/saslprep": "1.5.4"
+    "@effect-kafka/core": "workspace:^"
   },
   "peerDependencies": {
     "effect": "4.0.0-rc.112"

@@ -17,6 +17,7 @@ function server(mechanism: SaslOptions["mechanism"], invalid?: "nonce" | "signat
     if (mechanism === "plain") { expect(payload).toBe("\0user\0pencil"); verified = true }
     else if (payload.startsWith("n,,")) {
       first = payload.slice(3)
+      expect(first.startsWith("n=user,r=")).toBe(true)
       const nonce = first.slice(first.indexOf(",r=") + 3)
       challenge = `r=${invalid === "nonce" ? "wrong" : nonce + "server"},s=c2FsdA==,i=${invalid === "iterations" ? "1000001" : "4096"}${invalid === "duplicate" ? ",i=4096" : ""}`
       reply = challenge
@@ -54,4 +55,20 @@ for (const invalid of ["nonce", "signature", "iterations", "duplicate", "credent
 test("authentication preserves interruption", async () => {
   const exit = await Effect.runPromiseExit(authenticate({ mechanism: "plain", username: "user", password: "pencil" }, () => Effect.interrupt))
   expect(Exit.isFailure(exit) && Cause.hasInterrupts(exit.cause)).toBe(true)
+})
+
+for (const mechanism of ["scram-sha-256", "scram-sha-512"] as const) {
+  test(`${mechanism}: uses local SASLprep for Unicode credentials`, async () => {
+    const s = server(mechanism)
+    await Effect.runPromise(authenticate({ mechanism, username: "u\u00adser", password: "p\u00adencil" }, s.perform))
+    expect(s.verified()).toBe(true)
+  })
+}
+test("SCRAM sanitizes local preparation failures", async () => {
+  const s = server("scram-sha-256")
+  const error = await Effect.runPromise(authenticate({ mechanism: "scram-sha-256", username: "secret-user\u0007", password: "secret-password" }, s.perform).pipe(Effect.flip))
+  expect(error.operation).toBe("native.sasl")
+  expect(String(error.cause)).toBe("Error: SASL authentication failed")
+  expect(JSON.stringify(error)).not.toContain("secret")
+  expect(s.verified()).toBe(false)
 })
