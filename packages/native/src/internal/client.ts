@@ -49,7 +49,11 @@ export const makeClient = (options: ClientOptions) => Effect.gen(function*() {
     const frame = yield* checked("native.encode", () => frameRequest(api, version, id, config.clientId, body, config.maxRequestBytes, flexible))
     const response = yield* exchange(address, frame, config.transport)
     return yield* checked("native.decode", () => responseBody(response, id, flexible))
-  })
+  }).pipe(Effect.withSpan("kafka.native.request", { kind: "client", attributes: {
+    "messaging.system": "kafka", "server.address": address.host, "server.port": address.port,
+    "kafka.api.key": api, "kafka.api.version": version, "kafka.request.body_bytes": body.length,
+    "network.transport": "tcp", "kafka.tls": config.transport.tls !== undefined
+  } }, { captureStackTrace: false }))
   const negotiate = (address: Endpoint, api: number, version: number) => Effect.gen(function*() {
     const body = yield* raw(address, 18, 0, Buffer.alloc(0))
     yield* checked("native.versions", () => checkVersions(body, api, version))
@@ -87,7 +91,9 @@ export const makeClient = (options: ClientOptions) => Effect.gen(function*() {
       if (unavailable) throw new KafkaBrokerError({ api: "Metadata", code: unavailable.error || 5, topic, partition: unavailable.id })
       return metadata
     })
-  }))
+  })).pipe(Effect.withSpan("kafka.native.metadata", { attributes: {
+    "messaging.system": "kafka", "messaging.destination.name": topic
+  } }, { captureStackTrace: false }))
   const coordinator = (key: string, keyType: 0 | 1) => bootstrap((address) => Effect.gen(function*() {
     const response = yield* rpc(address, "FindCoordinator", { key, keyType })
     return { host: response.host, port: response.port }

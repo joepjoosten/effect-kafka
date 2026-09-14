@@ -1,0 +1,28 @@
+name: Producer benchmark
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: pnpm benchmark:up
+      - run: pnpm benchmark
+        env:
+          BENCH_BROKER_VERSION: '4.0.0'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: producer-benchmark
+          path: .benchmark/*.json
+          include-hidden-files: true
+          retention-days: 30
+      - name: Broker logs
+        if: failure()
+        run: docker compose -p effect-kafka-benchmark -f benchmarks/compose.yml logs
+      - run: pnpm benchmark:down
+        if: always()

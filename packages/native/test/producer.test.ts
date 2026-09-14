@@ -1,6 +1,7 @@
 import * as Net from "node:net"
 import { once } from "node:events"
-import { Effect } from "effect"
+import { Effect, Exit, Option } from "effect"
+import { recorder } from "./tracer.js"
 import { Producer } from "@effect-kafka/core"
 import { expect, test } from "vitest"
 import { producerLayer, type ProducerOptions } from "../src/index.js"
@@ -133,4 +134,43 @@ test("routes Produce to the advertised leader rather than the bootstrap socket",
     expect(bootstrap.apis).toEqual([18, 3])
     expect(leader.apis).toEqual([18, 0])
   } finally { await bootstrap.close(); await leader.close() }
+})
+
+
+test("native spans preserve application parents and distinguish broker failures from completed requests", async () => {
+  const b = await broker({ produceError: 6 })
+  const { spans, tracer } = recorder()
+  try {
+    const error = await Effect.runPromise(send({ brokers: [b.address] }, 0).pipe(Effect.withSpan("application.publish"), Effect.withTracer(tracer), Effect.flip))
+    expect(error.cause).toMatchObject({ api: "Produce", code: 6 })
+    const find = (name: string) => spans.find((span) => span.name === name)!
+    const parent = (name: string) => Option.getOrThrow(find(name).parent).spanId
+    expect(parent("kafka.native.send")).toBe(find("application.publish").spanId)
+    expect(parent("kafka.native.metadata")).toBe(find("kafka.native.send").spanId)
+    expect(parent("kafka.native.produce")).toBe(find("kafka.native.send").spanId)
+    expect(spans.filter((s) => s.name === "kafka.native.request").map((s) => s.attributes.get("kafka.api.key"))).toEqual([18, 3, 18, 0])
+    for (const span of spans) {
+      expect(span.status._tag).toBe("Ended")
+      if (span.status._tag === "Ended") {
+        expect(span.status.endTime >= span.status.startTime).toBe(true)
+        expect(Exit.isFailure(span.status.exit)).toBe(["application.publish", "kafka.native.send", "kafka.native.produce"].includes(span.name))
+      }
+    }
+    expect(find("kafka.native.produce").attributes.get("messaging.destination.name")).toBe("events")
+    expect(b.apis.filter((api) => api === 0)).toHaveLength(1)
+  } finally { await b.close() }
+})
+test("tracing does not add payloads or headers to attributes and can be disabled", async () => {
+  const b = await broker()
+  const { spans, tracer } = recorder()
+  const program = Producer.pipe(Effect.flatMap((p) => p.send({ topic: "events", messages: [{ key: "private-key", value: "private-value", headers: { traceparent: "private-header" } }] })), Effect.provide(producerLayer({ brokers: [b.address] })))
+  try {
+    const reports = await Effect.runPromise(program.pipe(Effect.withTracer(tracer)))
+    expect(reports[0]?.errorCode).toBe(0)
+    const attributes = JSON.stringify(spans.map((s) => [...s.attributes]))
+    for (const secret of ["private-key", "private-value", "private-header"]) expect(attributes).not.toContain(secret)
+    const count = spans.length
+    await Effect.runPromise(program.pipe(Effect.withTracer(tracer), Effect.withTracerEnabled(false)))
+    expect(spans).toHaveLength(count)
+  } finally { await b.close() }
 })

@@ -1,0 +1,21 @@
+services:
+  kafka:
+    image: apache/kafka:4.0.0
+    ports:
+      - "127.0.0.1:19092:19092"
+      - "127.0.0.1:19094:19094"
+      - "127.0.0.1:19095:19095"
+      - "127.0.0.1:19096:19096"
+    volumes:
+      - ./server.properties:/mnt/benchmark.properties:ro
+      - ../.benchmark/certs:/mnt/certs:ro
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - >-
+        /opt/kafka/bin/kafka-storage.sh format -t MkU3OEVBNTcwNTJENDM2Qk -c /mnt/benchmark.properties &&
+        exec /opt/kafka/bin/kafka-server-start.sh /mnt/benchmark.properties
+    healthcheck:
+      test: ["CMD", "/opt/kafka/bin/kafka-topics.sh", "--bootstrap-server", "localhost:19092", "--list"]
+      interval: 3s
+      timeout: 10s
+      retries: 30

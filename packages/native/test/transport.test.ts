@@ -2,7 +2,8 @@ import * as Net from "node:net"
 import * as Tls from "node:tls"
 import { readFileSync } from "node:fs"
 import { once } from "node:events"
-import { Effect, Exit } from "effect"
+import { Cause, Effect, Exit } from "effect"
+import { recorder } from "./tracer.js"
 import { expect, test } from "vitest"
 import { exchange } from "../src/internal/transport.js"
 
@@ -64,5 +65,27 @@ test("TLS verifies broker certificates and accepts an explicitly trusted CA", as
     expect(Exit.isFailure(await Effect.runPromiseExit(exchange(address, Buffer.from([1]), { ...options, tls: { servername: "localhost" } })))).toBe(true)
     expect(Exit.isFailure(await Effect.runPromiseExit(exchange(address, Buffer.from([1]), { ...options, tls: { ca: cert, servername: "wrong.example" } })))).toBe(true)
     expect(await Effect.runPromise(exchange(address, Buffer.from([1]), { ...options, tls: { ca: cert, servername: "localhost" } }))).toEqual(Buffer.from([0, 0, 0, 42]))
+  } finally { await close(server) }
+})
+
+test("authentication spans end on interruption without recording credentials", async () => {
+  let connected!: () => void
+  const ready = new Promise<void>((resolve) => { connected = resolve })
+  const server = Net.createServer((socket) => { socket.resume(); connected() })
+  const address = await listen(server)
+  const controller = new AbortController()
+  const { tracer, spans } = recorder()
+  try {
+    const run = Effect.runPromiseExit(exchange(address, Buffer.from([1]), { ...options, requestTimeoutMs: 60000,
+      sasl: { mechanism: "plain", username: "private-user", password: "private-password" }
+    }).pipe(Effect.withTracer(tracer)), { signal: controller.signal })
+    await ready; controller.abort()
+    const exit = await run
+    expect(Exit.isFailure(exit) && Cause.hasInterrupts(exit.cause)).toBe(true)
+    const auth = spans.find((s) => s.name === "kafka.native.authenticate")!
+    expect(auth.status._tag).toBe("Ended")
+    if (auth.status._tag === "Ended") expect(Exit.isFailure(auth.status.exit) && Cause.hasInterrupts(auth.status.exit.cause)).toBe(true)
+    expect(auth.attributes.get("kafka.sasl.mechanism")).toBe("plain")
+    expect(JSON.stringify([...auth.attributes])).not.toContain("private-")
   } finally { await close(server) }
 })
