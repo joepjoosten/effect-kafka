@@ -81,3 +81,6 @@ throughput conclusions. JIT warmup, OS scheduling, TLS session behavior, contain
 networking, broker storage and GC affect results. This measures uncompressed raw
 records, not Avro encoding, consumers, transactions, WAN performance or replicated
 durability. Measure those separately with your topology and failure scenarios.
+
+A [checked-in reference run](results/README.md) includes all raw samples and a
+qualified comparison for local Kafka 4.1.2.
