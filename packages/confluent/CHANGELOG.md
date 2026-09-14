@@ -1,5 +1,11 @@
 # @effect-kafka/confluent
 
+## 0.4.0
+
+### Patch Changes
+
+- @effect-kafka/core@0.4.0
+
 ## 0.3.0
 
 ### Patch Changes
