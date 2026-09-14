@@ -3,7 +3,7 @@
   "version": "0.2.0",
   "type": "module",
   "license": "MIT",
-  "description": "Native Kafka protocol producer implemented with Effect and Node TCP/TLS",
+  "description": "Effect-native Kafka producers, consumers, SASL, compression and transactions over Node TCP/TLS",
   "repository": {
     "type": "git",
     "url": "https://github.com/joepjoosten/effect-kafka.git",
@@ -22,7 +22,9 @@
     "dist",
     "README.md",
     "CHANGELOG.md",
-    "LICENSE"
+    "LICENSE",
+    "NOTICE",
+    "LICENSE-APACHE"
   ],
   "publishConfig": {
     "access": "public",
@@ -34,7 +36,8 @@
     "test": "vitest --run"
   },
   "dependencies": {
-    "@effect-kafka/core": "workspace:^"
+    "@effect-kafka/core": "workspace:^",
+    "@mongodb-js/saslprep": "1.5.4"
   },
   "peerDependencies": {
     "effect": "4.0.0-rc.112"
@@ -47,6 +50,6 @@
     "vitest": "4.1.4"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22.15.0"
   }
 }

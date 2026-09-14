@@ -13,13 +13,16 @@ export class KafkaBrokerError extends Data.TaggedError("KafkaBrokerError")<{
 export interface Partition { readonly id: number; readonly leader: number; readonly error: number }
 export interface Metadata { readonly brokers: ReadonlyMap<number, Endpoint>; readonly partitions: ReadonlyArray<Partition> }
 
-export const frameRequest = (key: number, version: number, correlation: number, clientId: string, body: Buffer, limit: number): Buffer => {
-  const request = new Writer(limit).i16(key).i16(version).i32(correlation).string(clientId).raw(body).finish()
+export const frameRequest = (key: number, version: number, correlation: number, clientId: string, body: Buffer, limit: number, flexible = false): Buffer => {
+  const header = new Writer(limit).i16(key).i16(version).i32(correlation).string(clientId)
+  if (flexible) header.uvarint(0)
+  const request = header.raw(body).finish()
   return new Writer(limit + 4).i32(request.length).raw(request).finish()
 }
-export const responseBody = (frame: Buffer, correlation: number): Buffer => {
+export const responseBody = (frame: Buffer, correlation: number, flexible = false): Buffer => {
   const reader = new Reader(frame)
   if (reader.i32() !== correlation) throw new Error("Kafka response correlation ID mismatch")
+  if (flexible) reader.tags()
   return reader.take(reader.remaining)
 }
 export const checkVersions = (body: Buffer, api: number, version: number): void => {
@@ -68,18 +71,19 @@ export const metadataResponse = (body: Buffer, topic: string): Metadata => {
   if (partitions.some((p, i) => p.id < 0 || (i > 0 && partitions[i - 1]!.id === p.id))) throw new Error("Invalid or duplicate partition in metadata")
   return { brokers, partitions }
 }
-export const produceRequest = (topic: string, batches: ReadonlyMap<number, Buffer>, acks: 1 | -1, timeout: number, limit: number): Buffer => {
-  const writer = new Writer(limit).string(null).i16(acks).i32(timeout).i32(1).string(topic).i32(batches.size)
+export const produceRequest = (topic: string, batches: ReadonlyMap<number, Buffer>, acks: 1 | -1, timeout: number, limit: number, transactionalId: string | null = null): Buffer => {
+  const writer = new Writer(limit).string(transactionalId).i16(acks).i32(timeout).i32(1).string(topic).i32(batches.size)
   for (const [partition, batch] of batches) writer.i32(partition).bytes(batch)
   return writer.finish()
 }
-export const produceResponse = (body: Buffer, topic: string, expected: ReadonlyArray<number>): ReadonlyArray<DeliveryReport> => {
+export const produceResponse = (body: Buffer, topic: string, expected: ReadonlyArray<number>, version = 3): ReadonlyArray<DeliveryReport> => {
   const reader = new Reader(body)
   const reports = reader.array(() => {
     const topicName = reader.string()
     return reader.array(() => {
       const partition = reader.i32(), errorCode = reader.i16(), baseOffset = reader.i64().toString()
       reader.i64() // log append time
+      if (version >= 5) reader.i64() // log start offset
       return { topicName, partition, errorCode, baseOffset }
     })
   }).flat()

@@ -31,7 +31,15 @@ export interface Subscription {
   readonly fromBeginning?: boolean
   readonly partitionsConsumedConcurrently?: number
 }
+export interface ConsumerGroupMetadata {
+  readonly groupId: string
+  readonly generationId: number
+  readonly memberId: string
+  readonly groupInstanceId?: string | null
+}
 export interface ConsumerRecord {
+  /** Native group identity for transactionally committing consumed offsets. */
+  readonly groupMetadata?: ConsumerGroupMetadata
   readonly topic: string
   readonly partition: number
   readonly offset: string
