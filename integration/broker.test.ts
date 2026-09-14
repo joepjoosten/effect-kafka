@@ -5,6 +5,7 @@ import { Consumer, Producer } from "@effect-kafka/core"
 import * as KafkaJs from "@effect-kafka/kafkajs"
 import * as Native from "@effect-kafka/native"
 import * as Confluent from "@effect-kafka/confluent"
+import { createTopic } from "./helpers.js"
 
 const broker = process.env.KAFKA_BROKER ?? "localhost:9092"
 
@@ -14,7 +15,7 @@ for (const adapter of ["kafkajs", "confluent", "native"] as const) {
     const admin = new KafkaJS.Kafka({ brokers: [broker], logLevel: KafkaJS.logLevel.NOTHING }).admin()
     await admin.connect()
     try {
-      await admin.createTopics({ waitForLeaders: true, topics: [{ topic, numPartitions: 1, replicationFactor: 1 }] })
+      await createTopic(admin, topic)
       const producerLive = adapter === "kafkajs"
         ? KafkaJs.producerLayer({ client: { brokers: [broker] }, producer: { createPartitioner: KafkaJs.Partitioners.DefaultPartitioner } })
         : adapter === "native" ? Native.producerLayer({ brokers: [broker] })
@@ -66,7 +67,7 @@ test("native: keyed partitioning matches KafkaJS and explicit partitions work", 
   await admin.connect()
   await reference.connect()
   try {
-    await admin.createTopics({ waitForLeaders: true, topics: [{ topic, numPartitions: 3, replicationFactor: 1 }] })
+    await createTopic(admin, topic, 3)
     await Effect.runPromise(Producer.pipe(Effect.flatMap((native) => Effect.gen(function*() {
       for (const key of ["", "a", "ab", "abc", "abcd", "hello", "🦋", "same-key"]) {
         const expected = yield* Effect.promise(() => reference.send({ topic, messages: [{ key, value: "reference" }] }))

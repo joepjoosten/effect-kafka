@@ -166,6 +166,12 @@ pnpm check:examples
 pnpm test:integration
 ```
 
+Integration tests require a plaintext listener at `localhost:9092` and a SASL
+listener at `localhost:9094` with the test credentials in
+[integration/server.properties](integration/server.properties). The
+[CI workflow](.github/workflows/check.yml) shows broker startup and SCRAM user setup.
+Override the endpoints with `KAFKA_BROKER` and `KAFKA_SASL_BROKER`.
+
 CI runs all adapters against Apache Kafka, including binary payloads, repeated
 headers, tombstones, and explicit offset commits. Unit tests cover lifecycle,
 cancellation, handler errors, backpressure, and adapter conversion.
