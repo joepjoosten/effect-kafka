@@ -1,0 +1,65 @@
+{
+  "esbuild": "0.28.2",
+  "node": "v26.7.0",
+  "target": "node24",
+  "format": "esm",
+  "minified": true,
+  "reports": [
+    {
+      "adapter": "native",
+      "profile": "bundled",
+      "rawBytes": 128077,
+      "gzipBytes": 44822,
+      "externalImports": [
+        "node:crypto",
+        "node:net",
+        "node:tls",
+        "node:zlib"
+      ]
+    },
+    {
+      "adapter": "kafkajs",
+      "profile": "bundled",
+      "rawBytes": 359060,
+      "gzipBytes": 101843,
+      "externalImports": [
+        "assert",
+        "crypto",
+        "events",
+        "net",
+        "tls",
+        "util",
+        "zlib"
+      ]
+    },
+    {
+      "adapter": "native",
+      "profile": "effect-external",
+      "rawBytes": 37408,
+      "gzipBytes": 13210,
+      "externalImports": [
+        "effect",
+        "node:crypto",
+        "node:net",
+        "node:tls",
+        "node:zlib"
+      ]
+    },
+    {
+      "adapter": "kafkajs",
+      "profile": "effect-external",
+      "rawBytes": 271914,
+      "gzipBytes": 71566,
+      "externalImports": [
+        "assert",
+        "crypto",
+        "effect",
+        "events",
+        "net",
+        "tls",
+        "util",
+        "zlib"
+      ]
+    }
+  ]
+}

@@ -80,6 +80,11 @@ export const exchange = (address: Endpoint, request: Buffer, options: TransportO
       }
     }).pipe(Effect.ensuring(Effect.sync(() => cleanup())))
     })
-    if (options.sasl) yield* authenticate(options.sasl, perform)
+    if (options.sasl) yield* authenticate(options.sasl, perform).pipe(Effect.withSpan("kafka.native.authenticate", {
+      kind: "client", attributes: {
+        "messaging.system": "kafka", "kafka.sasl.mechanism": options.sasl.mechanism,
+        "server.address": address.host, "server.port": address.port, "kafka.tls": options.tls !== undefined
+      }
+    }, { captureStackTrace: false }))
     return yield* perform(request)
   }))

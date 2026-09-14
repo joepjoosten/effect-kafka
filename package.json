@@ -13,7 +13,12 @@
     "changeset": "changeset",
     "changeset-version": "changeset version && pnpm install --lockfile-only",
     "changeset-publish": "pnpm build && changeset publish",
-    "test:integration": "vitest run --config vitest.integration.ts"
+    "test:integration": "vitest run --config vitest.integration.ts",
+    "benchmark:up": "bash benchmarks/up.sh",
+    "benchmark:down": "docker compose -p effect-kafka-benchmark -f benchmarks/compose.yml down --volumes --remove-orphans",
+    "benchmark:bundle": "pnpm build && node benchmarks/bundle.mjs",
+    "benchmark:run": "pnpm build && node benchmarks/run.mjs",
+    "benchmark": "pnpm benchmark:bundle && pnpm benchmark:run"
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.0",
@@ -21,6 +26,7 @@
     "@effect/vitest": "4.0.0-rc.112",
     "@types/node": "^25.7.0",
     "effect": "4.0.0-rc.112",
+    "esbuild": "0.28.2",
     "kafkajs": "2.2.4",
     "typescript": "^6.0.3",
     "vitest": "4.1.4"

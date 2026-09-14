@@ -77,15 +77,26 @@ export const makeProducer = (client: Client, options: ProducerOptions, transacti
       const reports: DeliveryReport[] = []
       for (const { address, body, partitions, counts } of requests) {
         yield* negotiate(address, 0, version)
-        const response = yield* request(address, 0, version, body)
-        reports.push(...yield* checked("native.produce", () => produceResponse(response, record.topic, partitions, version)))
+        const acknowledged = yield* Effect.gen(function*() {
+          const response = yield* request(address, 0, version, body)
+          return yield* checked("native.produce", () => produceResponse(response, record.topic, partitions, version))
+        }).pipe(Effect.withSpan("kafka.native.produce", { kind: "producer", attributes: {
+          "messaging.system": "kafka", "messaging.destination.name": record.topic,
+          "server.address": address.host, "server.port": address.port,
+          "kafka.api.version": version, "kafka.acks": settings.acks,
+          "kafka.compression": settings.compression, "kafka.partition.count": partitions.length
+        } }, { captureStackTrace: false }))
+        reports.push(...acknowledged)
         if (transaction) for (const [id, count] of counts) {
           const key = record.topic + ":" + id
           transaction.sequences.set(key, (transaction.sequences.get(key) ?? 0) + count)
         }
       }
       return reports
-    })) })
+    })).pipe(Effect.withSpan("kafka.native.send", { kind: "producer", attributes: {
+      "messaging.system": "kafka", "messaging.destination.name": record.topic,
+      "messaging.batch.message_count": record.messages.length
+    } }, { captureStackTrace: false })) })
 })
 
 export const producerLayer = (options: ProducerOptions): Layer.Layer<Producer, KafkaError> => Layer.effect(Producer,

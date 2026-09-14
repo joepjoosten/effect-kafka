@@ -1,5 +1,7 @@
 # Effect Kafka
 
+**Migrating from KafkaJS?** Read the [migration guide](docs/kafkajs-to-native.md) for connection costs, delivery semantics, tracing and reproducible benchmarks.
+
 Effect-native Kafka producer and consumer services for **Effect 4.0.0-rc.112**.
 
 | Package | Responsibility |
