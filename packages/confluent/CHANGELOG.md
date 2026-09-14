@@ -1,5 +1,12 @@
 # @effect-kafka/confluent
 
+## 0.3.0
+
+### Patch Changes
+
+- Updated dependencies [53d7441]
+  - @effect-kafka/core@0.3.0
+
 ## 0.2.0
 
 ### Patch Changes
