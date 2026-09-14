@@ -1,5 +1,15 @@
 # @effect-kafka/native
 
+## 0.5.0
+
+### Minor Changes
+
+- 3be3f79: Add Effect spans for native sends, metadata discovery, authentication and Produce acknowledgement validation. Document KafkaJS migration semantics and provide reproducible TLS/SASL latency, throughput and emitted-bundle comparisons.
+
+### Patch Changes
+
+- @effect-kafka/core@0.5.0
+
 ## 0.4.0
 
 ### Minor Changes
