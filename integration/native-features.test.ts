@@ -42,7 +42,7 @@ for (const compression of ["none", "gzip", "zstd"] as const) {
 for (const mechanism of ["plain", "scram-sha-256", "scram-sha-512"] as const) {
   test(`native SASL ${mechanism}: authenticated produce and consume`, async () => {
     const f = await fixture()
-    const sasl = { mechanism, username: "test", password: "test-secret" }
+    const sasl = { mechanism, username: mechanism === "plain" ? "test" : "te\u00adst", password: mechanism === "plain" ? "test-secret" : "te\u00adst-secret" }
     try {
       await send(f.topic, [mechanism], { brokers: [authBroker], sasl })
       expect(await collect(f.topic, 1, { brokers: [authBroker], sasl })).toEqual([mechanism])

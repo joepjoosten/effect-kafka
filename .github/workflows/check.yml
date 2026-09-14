@@ -17,6 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
+      - run: python3 scripts/generate-saslprep-tables.py --check
       - run: pnpm build
       - run: pnpm check
       - run: pnpm test

@@ -2,7 +2,7 @@
 
 Kafka producers, consumers and transactions implemented with Effect and Node
 TCP/TLS. Requires **Effect 4.0.0-rc.112** and **Node 22.15+**. No KafkaJS,
-Confluent or librdkafka dependency; SASLprep uses `@mongodb-js/saslprep`.
+Confluent, librdkafka or external SASLprep dependency.
 
 ```sh
 pnpm add @effect-kafka/core @effect-kafka/native effect@4.0.0-rc.112
@@ -96,6 +96,36 @@ request. SCRAM validates the nonce and server signature; authentication errors
 omit credentials and server-provided error text. Use TLS for authenticated
 connections. Node's default certificate and hostname checks apply; custom CAs
 and mutual TLS client `cert`/`key` are supported.
+
+## SASLprep module
+
+SASLprep is implemented locally and is used by SCRAM authentication. It is also
+available through the root `SaslPrep` namespace or the `@effect-kafka/native/SaslPrep`
+subpath:
+
+```ts
+import { Effect } from "effect"
+import { SaslPrep } from "@effect-kafka/native"
+// Alternatively: import * as SaslPrep from "@effect-kafka/native/SaslPrep"
+
+const prepared = await Effect.runPromise(SaslPrep.prepare("I\u00adX")) // "IX"
+const synchronous = SaslPrep.prepareUnsafe("\u2168") // "IX"
+```
+
+`prepare` returns a lazy `Effect<string, SaslPrepError>`; `prepareUnsafe` returns a
+string or throws `SaslPrepError`. Both preserve case, map spaces and ignored
+characters, perform NFKC normalization, and check prohibited characters,
+unassigned code points, and bidirectional text. Errors expose a `reason` without
+including the original or prepared credential. Empty strings, including strings
+whose characters are all removed, are valid SASLprep output; an authentication
+mechanism may impose further restrictions.
+
+The checked-in RFC 3454 tables use Unicode 3.2. NFKC uses Node's implementation,
+matching the previous dependency. `{ allowUnassigned: true }` permits Unicode 3.2
+unassigned output for query use; the default rejects it. SCRAM uses the default.
+Regenerate or verify the tables with `python3 scripts/generate-saslprep-tables.py`
+(or `--check`), using only Python's standard library. No MongoDB utility,
+`sparse-bitfield`, or `memory-pager` package is needed.
 
 ## Transactions
 
