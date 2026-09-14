@@ -3,6 +3,7 @@ import { Effect, Layer } from "effect"
 import { expect, test } from "vitest"
 import { Consumer, KafkaError, Producer, type ConsumerRecord } from "@effect-kafka/core"
 import * as Native from "@effect-kafka/native"
+import { createTopic } from "./helpers.js"
 
 const broker = process.env.KAFKA_BROKER ?? "localhost:9092"
 const authBroker = process.env.KAFKA_SASL_BROKER ?? "localhost:9094"
@@ -10,7 +11,8 @@ let counter = 0
 async function fixture(partitions = 1) {
   const topic = `native-features-${Date.now()}-${counter++}`
   const admin = new KafkaJS.Kafka({ brokers: [broker], logLevel: KafkaJS.logLevel.NOTHING }).admin(); await admin.connect()
-  await admin.createTopics({ waitForLeaders: true, topics: [{ topic, numPartitions: partitions, replicationFactor: 1 }] })
+  try { await createTopic(admin, topic, partitions) }
+  catch (error) { await admin.disconnect(); throw error }
   return { topic, admin, close: async () => { await admin.deleteTopics({ topics: [topic] }); await admin.disconnect() } }
 }
 const send = (topic: string, values: string[], options: Partial<Native.ProducerOptions> = {}) => Effect.runPromise(Producer.pipe(Effect.flatMap((p) => p.send({ topic, messages: values.map((value) => ({ value, partition: 0 })) })), Effect.provide(Native.producerLayer({ brokers: [broker], ...options }))))
