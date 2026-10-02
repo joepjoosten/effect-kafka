@@ -9,7 +9,7 @@ for package in core kafkajs confluent native; do
 done
 cd "$smoke_dir"
 printf '{"private":true,"type":"module"}\n' > package.json
-npm install --no-audit --no-fund "$smoke_dir"/*.tgz effect@4.0.0-rc.112 kafkajs@2.2.4 @confluentinc/kafka-javascript@1.10.1
+npm install --no-audit --no-fund "$smoke_dir"/*.tgz effect@4.0.0 kafkajs@2.2.4 @confluentinc/kafka-javascript@1.10.1
 node --input-type=module <<'JS'
 import assert from "node:assert/strict"
 import { Effect } from "effect"
@@ -35,7 +35,7 @@ JS
 # A separate directory proves the native package does not resolve either Kafka client.
 cd "$native_dir"
 printf '{"private":true,"type":"module"}\n' > package.json
-npm install --no-audit --no-fund "$smoke_dir"/effect-kafka-core-*.tgz "$smoke_dir"/effect-kafka-native-*.tgz effect@4.0.0-rc.112
+npm install --no-audit --no-fund "$smoke_dir"/effect-kafka-core-*.tgz "$smoke_dir"/effect-kafka-native-*.tgz effect@4.0.0
 node --input-type=module <<'JS'
 import assert from "node:assert/strict"
 import { createRequire } from "node:module"

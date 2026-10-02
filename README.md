@@ -2,7 +2,7 @@
 
 **Migrating from KafkaJS?** Read the [migration guide](docs/kafkajs-to-native.md) for connection costs, delivery semantics, tracing and reproducible benchmarks.
 
-Effect-native Kafka producer and consumer services for **Effect 4.0.0-rc.112**.
+Effect-native Kafka producer and consumer services for **Effect 4.0.0**.
 
 | Package | Responsibility |
 | --- | --- |
@@ -20,9 +20,9 @@ This project is separate from the existing `effect-kafka` npm package.
 Choose one adapter. Node 24 is used in CI; Node 22+ is required (22.15+ for the native adapter).
 
 ```sh
-pnpm add @effect-kafka/core @effect-kafka/kafkajs kafkajs effect@4.0.0-rc.112
+pnpm add @effect-kafka/core @effect-kafka/kafkajs kafkajs effect@4.0.0
 # Or:
-pnpm add @effect-kafka/core @effect-kafka/confluent @confluentinc/kafka-javascript effect@4.0.0-rc.112
+pnpm add @effect-kafka/core @effect-kafka/confluent @confluentinc/kafka-javascript effect@4.0.0
 ```
 
 The Confluent driver needs native bindings. With pnpm, allow the
@@ -110,7 +110,7 @@ timeouts appropriately. Confluent manages heartbeats internally.
 ## Native Kafka (no Kafka client dependency)
 
 ```sh
-pnpm add @effect-kafka/core @effect-kafka/native effect@4.0.0-rc.112
+pnpm add @effect-kafka/core @effect-kafka/native effect@4.0.0
 ```
 
 Use `Native.producerLayer` and `Native.consumerLayer` from `@effect-kafka/native`

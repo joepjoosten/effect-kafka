@@ -26,7 +26,7 @@ const publish = Producer.pipe(
 
 Existing Avro encoding and trace headers need no wire-format changes. Native spans
 use the application's Effect tracer; they do not inject propagation headers.
-Requires Node 22.15+ and Effect 4.0.0-rc.112.
+Requires Node 22.15+ and Effect 4.0.0.
 
 ## Configuration and lifecycle
 
