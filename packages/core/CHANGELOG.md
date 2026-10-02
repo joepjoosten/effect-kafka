@@ -1,5 +1,11 @@
 # @effect-kafka/core
 
+## 0.6.0
+
+### Minor Changes
+
+- 54e015a: Upgrade to the stable Effect 4.0.0 release. The `effect` peer dependency is now `^4.0.0` instead of the pinned `4.0.0-rc.112`.
+
 ## 0.5.0
 
 ## 0.4.0
