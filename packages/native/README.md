@@ -3,11 +3,11 @@
 **Migrating from KafkaJS?** Read the [migration guide](https://github.com/joepjoosten/effect-kafka/blob/main/docs/kafkajs-to-native.md) for connection costs, delivery semantics, tracing and reproducible benchmarks.
 
 Kafka producers, consumers and transactions implemented with Effect and Node
-TCP/TLS. Requires **Effect 4.0.0-rc.112** and **Node 22.15+**. No KafkaJS,
+TCP/TLS. Requires **Effect 4.0.0** and **Node 22.15+**. No KafkaJS,
 Confluent, librdkafka or external SASLprep dependency.
 
 ```sh
-pnpm add @effect-kafka/core @effect-kafka/native effect@4.0.0-rc.112
+pnpm add @effect-kafka/core @effect-kafka/native effect@4.0.0
 ```
 
 ## Produce

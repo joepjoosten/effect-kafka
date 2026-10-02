@@ -37,13 +37,13 @@
     "@effect-kafka/core": "workspace:^"
   },
   "peerDependencies": {
-    "effect": "4.0.0-rc.112",
+    "effect": "^4.0.0",
     "@confluentinc/kafka-javascript": "^1.10.1"
   },
   "devDependencies": {
-    "@effect/vitest": "4.0.0-rc.112",
+    "@effect/vitest": "4.0.0",
     "@types/node": "^25.7.0",
-    "effect": "4.0.0-rc.112",
+    "effect": "4.0.0",
     "typescript": "^6.0.3",
     "vitest": "4.1.4",
     "@confluentinc/kafka-javascript": "1.10.1"
