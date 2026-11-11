@@ -1,7 +1,7 @@
 {
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@10.17.1",
+  "packageManager": "pnpm@11.20.0",
   "workspaces": [
     "packages/*"
   ],
@@ -28,7 +28,7 @@
     "effect": "4.1.4",
     "esbuild": "0.28.2",
     "kafkajs": "2.2.4",
-    "typescript": "^6.0.3",
+    "typescript": "^7.0.2",
     "vite": "^8.3.8",
     "vitest": "5.1.0"
   },
