@@ -2,6 +2,6 @@
 
 KafkaJS implementation of the shared Effect Kafka services.
 
-Targets `effect@4.0.0`.
+Targets `effect@4.1.4`.
 
 See the [repository documentation](https://github.com/joepjoosten/effect-kafka#readme) for installation, producer/consumer examples, resource lifetime, offset handling, and error semantics.
