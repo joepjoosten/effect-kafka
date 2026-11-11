@@ -20,7 +20,7 @@
     "declarationMap": true,
     "noImplicitReturns": false,
     "noUnusedLocals": true,
-    "noUnusedParameters": false,
+    "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noEmitOnError": true,
     "allowJs": false,
@@ -51,6 +51,10 @@
       "@effect-kafka/native": [
         "./packages/native/src/index.ts"
       ]
-    }
+    },
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
+    "noImplicitOverride": true,
+    "noErrorTruncation": true
   }
 }

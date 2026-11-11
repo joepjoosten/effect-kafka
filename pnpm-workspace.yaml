@@ -1,10 +1,19 @@
 packages:
   - "packages/*"
+
+verifyDepsBeforeRun: error
+enableGlobalVirtualStore: false
+
 allowBuilds:
+  # Downloads the prebuilt librdkafka binding; the confluent adapter and its tests need it.
   "@confluentinc/kafka-javascript": true
+  dprint: false
   esbuild: false
+
 overrides:
   source-map-js: ^1.2.2
+
+# Released less than a day before they were adopted; remove once older than minimumReleaseAge.
 minimumReleaseAgeExclude:
   - effect@4.1.4
   - "@effect/vitest@4.1.4"

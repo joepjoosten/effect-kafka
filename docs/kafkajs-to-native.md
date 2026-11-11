@@ -6,19 +6,21 @@ partitioning, and delivery behavior. Application tests alone cannot validate tho
 operational differences against a broker.
 
 ```ts
-import { Effect } from "effect"
 import { Producer } from "@effect-kafka/core"
 import * as Native from "@effect-kafka/native"
+import { Effect } from "effect"
 
 const live = Native.producerLayer({
   brokers: ["kafka:29092"],
   allowAutoTopicCreation: true
 })
 const publish = Producer.pipe(
-  Effect.flatMap((producer) => producer.send({
-    topic: "events",
-    messages: [{ key: "event-123", value: "already encoded bytes also work" }]
-  })),
+  Effect.flatMap((producer) =>
+    producer.send({
+      topic: "events",
+      messages: [{ key: "event-123", value: "already encoded bytes also work" }]
+    })
+  ),
   Effect.withSpan("application.publish"),
   Effect.provide(live)
 )
@@ -30,18 +32,18 @@ Requires Node 22.15+ and Effect 4.1.4.
 
 ## Configuration and lifecycle
 
-| KafkaJS | Native |
-| --- | --- |
-| `client.brokers` | `brokers` |
-| `client.ssl` | `tls` (Node TLS options) |
-| `client.sasl` | `sasl`: PLAIN, SCRAM-SHA-256 or SCRAM-SHA-512 |
-| `producer.allowAutoTopicCreation`, default true | `allowAutoTopicCreation`, default **false** |
-| Default keyed partitioner | Java-compatible Murmur2 for keys; explicit partitions preserved |
-| Default unkeyed partitioning | Native uses round-robin; reassess ordering assumptions |
-| Send `acks`, default -1 | Layer `acks`, -1 or 1; no acks=0 |
-| Compression codecs | Native supports none, gzip and zstd |
-| Persistent producer connections | A new socket for each native request |
-| Configurable send retries/idempotence | No automatic ordinary Produce retries or idempotent producer option |
+| KafkaJS                                           | Native                                                                           |
+| ------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `client.brokers`                                  | `brokers`                                                                        |
+| `client.ssl`                                      | `tls` (Node TLS options)                                                         |
+| `client.sasl`                                     | `sasl`: PLAIN, SCRAM-SHA-256 or SCRAM-SHA-512                                    |
+| `producer.allowAutoTopicCreation`, default true   | `allowAutoTopicCreation`, default **false**                                      |
+| Default keyed partitioner                         | Java-compatible Murmur2 for keys; explicit partitions preserved                  |
+| Default unkeyed partitioning                      | Native uses round-robin; reassess ordering assumptions                           |
+| Send `acks`, default -1                           | Layer `acks`, -1 or 1; no acks=0                                                 |
+| Compression codecs                                | Native supports none, gzip and zstd                                              |
+| Persistent producer connections                   | A new socket for each native request                                             |
+| Configurable send retries/idempotence             | No automatic ordinary Produce retries or idempotent producer option              |
 | Eager adapter connection during Layer acquisition | Native Layer validates configuration; broker contact starts with a nonempty send |
 
 Reusing a native Layer shares the producer's serialization and partition state;
@@ -107,13 +109,13 @@ existing retry and transaction settings.
 
 These spans use the existing Effect tracer, without a new runtime dependency:
 
-| Span | Coverage |
-| --- | --- |
-| `kafka.native.send` | Entire send, including semaphore queue time |
-| `kafka.native.metadata` | Discovery, including bootstrap attempts |
-| `kafka.native.request` | One API exchange, including connection/authentication and correlation validation |
-| `kafka.native.authenticate` | SASL handshake and authentication, including initial TCP/TLS establishment |
-| `kafka.native.produce` | Produce exchange and decoded broker acknowledgement validation |
+| Span                        | Coverage                                                                         |
+| --------------------------- | -------------------------------------------------------------------------------- |
+| `kafka.native.send`         | Entire send, including semaphore queue time                                      |
+| `kafka.native.metadata`     | Discovery, including bootstrap attempts                                          |
+| `kafka.native.request`      | One API exchange, including connection/authentication and correlation validation |
+| `kafka.native.authenticate` | SASL handshake and authentication, including initial TCP/TLS establishment       |
+| `kafka.native.produce`      | Produce exchange and decoded broker acknowledgement validation                   |
 
 A typical tree under `application.publish` is send → metadata → request →
 authenticate, followed by send → request (ApiVersions), then send → produce →

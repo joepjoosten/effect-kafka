@@ -1,6 +1,6 @@
-import { Effect } from "effect"
 import { Producer } from "@effect-kafka/core"
 import * as KafkaJS from "@effect-kafka/kafkajs"
+import { Effect } from "effect"
 
 const live = KafkaJS.producerLayer({
   client: { brokers: ["kafka:29092"] },

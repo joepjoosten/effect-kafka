@@ -1,7 +1,7 @@
 import { expect, test } from "vitest"
 import { FrameDecoder, Reader, Writer } from "../src/internal/binary.js"
-import { crc32c, murmur2, recordBatch } from "../src/internal/records.js"
 import { checkVersions, produceResponse, responseBody } from "../src/internal/protocol.js"
+import { crc32c, murmur2, recordBatch } from "../src/internal/records.js"
 import { endpoint } from "../src/internal/transport.js"
 
 test("CRC32C matches the standard Castagnoli check vector", () => {
@@ -14,7 +14,9 @@ test("Murmur2 matches Kafka's Java hash vectors", () => {
   expect(murmur2(Buffer.from("kafka"))).toBe(3496464228)
 })
 test("signed varints encode negative deltas and int64 boundaries", () => {
-  expect(new Writer().varint(-1).varint(0).varint(1).varint(-64).varint(64).finish().toString("hex")).toBe("0100027f8001")
+  expect(new Writer().varint(-1).varint(0).varint(1).varint(-64).varint(64).finish().toString("hex")).toBe(
+    "0100027f8001"
+  )
   expect(new Writer().varint(-9223372036854775808n).finish().toString("hex")).toBe("ffffffffffffffffff01")
   expect(() => new Writer().varint(9223372036854775808n)).toThrow("int64")
 })
@@ -67,5 +69,7 @@ test("batch header preserves timestamp order and validates timestamp/size bounds
 test("broker addresses support DNS and bracketed IPv6", () => {
   expect(endpoint("kafka:29092")).toEqual({ host: "kafka", port: 29092 })
   expect(endpoint("[::1]:9092")).toEqual({ host: "::1", port: 9092 })
-  for (const invalid of ["host", "host:0", "host:65536", "host:-1", "::1:9092", "host:9092/path"]) expect(() => endpoint(invalid)).toThrow()
+  for (const invalid of ["host", "host:0", "host:65536", "host:-1", "::1:9092", "host:9092/path"]) {
+    expect(() => endpoint(invalid)).toThrow()
+  }
 })

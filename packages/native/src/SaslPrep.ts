@@ -5,7 +5,12 @@ export interface Options {
   /** Permit Unicode 3.2 unassigned output for queries; false for stored credentials. */
   readonly allowUnassigned?: boolean
 }
-export type Reason = "InvalidInput" | "ProhibitedCharacter" | "UnassignedCodePoint" | "MixedDirection" | "InvalidDirectionBoundary"
+export type Reason =
+  | "InvalidInput"
+  | "ProhibitedCharacter"
+  | "UnassignedCodePoint"
+  | "MixedDirection"
+  | "InvalidDirectionBoundary"
 /** Contains no input, normalized credentials, or underlying exception. */
 export class SaslPrepError extends Data.TaggedError("SaslPrepError")<{
   readonly reason: Reason
@@ -29,7 +34,7 @@ const contains = (ranges: ReadonlyArray<number>, point: number): boolean => {
  */
 export const prepareUnsafe = (input: string, options: Options = {}): string => {
   if (typeof input !== "string") throw new SaslPrepError({ reason: "InvalidInput" })
-  const mapped: string[] = []
+  const mapped: Array<string> = []
   for (const character of input) {
     const point = character.codePointAt(0)!
     // Space mapping precedes removal, preserving existing handling of U+200B.
@@ -51,7 +56,9 @@ export const prepareUnsafe = (input: string, options: Options = {}): string => {
   if (options.allowUnassigned !== true && hasUnassigned) throw new SaslPrepError({ reason: "UnassignedCodePoint" })
   if (hasRandAL) {
     if (hasL) throw new SaslPrepError({ reason: "MixedDirection" })
-    if (!contains(randALCat, first) || !contains(randALCat, last)) throw new SaslPrepError({ reason: "InvalidDirectionBoundary" })
+    if (!contains(randALCat, first) || !contains(randALCat, last)) {
+      throw new SaslPrepError({ reason: "InvalidDirectionBoundary" })
+    }
   }
   return normalized
 }

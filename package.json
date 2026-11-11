@@ -6,9 +6,13 @@
     "packages/*"
   ],
   "scripts": {
+    "clean": "rm -rf packages/*/dist packages/*/.tsbuildinfo examples/*.tsbuildinfo .benchmark",
     "build": "tsc -b tsconfig.build.json",
-    "check": "tsc -b tsconfig.json",
+    "check": "effect-tsgo tsrs -b tsconfig.json",
+    "check-tsc": "tsc -b tsconfig.json",
     "check:examples": "pnpm build && tsc -p examples/tsconfig.json",
+    "lint": "oxlint -f unix && dprint check",
+    "lint-fix": "oxlint --fix && dprint fmt",
     "test": "vitest run",
     "changeset": "changeset",
     "changeset-version": "changeset version && pnpm install --lockfile-only",
@@ -22,12 +26,14 @@
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.0",
-    "@effect/language-service": "^0.87.5",
+    "@effect/tsgo": "^0.67.5",
     "@effect/vitest": "4.1.4",
     "@types/node": "^25.7.0",
+    "dprint": "^0.64.3",
     "effect": "4.1.4",
     "esbuild": "0.28.2",
     "kafkajs": "2.2.4",
+    "oxlint": "^1.93.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.8",
     "vitest": "5.1.0"

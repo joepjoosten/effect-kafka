@@ -3,12 +3,19 @@ import { expect, test } from "vitest"
 import { SaslPrep } from "../src/index.js"
 import { prepare, prepareUnsafe, SaslPrepError } from "../src/SaslPrep.js"
 
-for (const [input, output] of [["I\u00adX", "IX"], ["user", "user"], ["USER", "USER"], ["\u00aa", "a"], ["\u2168", "IX"]]) {
+for (
+  const [input, output] of [["I\u00adX", "IX"], ["user", "user"], ["USER", "USER"], ["\u00aa", "a"], ["\u2168", "IX"]]
+) {
   test(`RFC 4013 example ${JSON.stringify(input)}`, () => expect(prepareUnsafe(input!)).toBe(output))
 }
 const rejects = (input: string, reason: SaslPrep.Reason, options?: SaslPrep.Options) => {
-  try { prepareUnsafe(input, options); throw new Error("Expected rejection") }
-  catch (error) { expect(error).toBeInstanceOf(SaslPrepError); expect(error).toMatchObject({ reason }) }
+  try {
+    prepareUnsafe(input, options)
+    throw new Error("Expected rejection")
+  } catch (error) {
+    expect(error).toBeInstanceOf(SaslPrepError)
+    expect(error).toMatchObject({ reason })
+  }
 }
 test("rejects RFC 4013 control and bidirectional examples", () => {
   rejects("\u0007", "ProhibitedCharacter")
@@ -20,7 +27,21 @@ test("maps every non-ASCII space, preserving mapping precedence", () => {
   }
 })
 test("removes mapped-to-nothing characters and accepts fully removed strings", () => {
-  for (const point of [0xad, 0x34f, 0x1806, 0x180b, 0x180c, 0x180d, 0x200c, 0x200d, 0x2060, ...Array.from({ length: 16 }, (_, i) => 0xfe00 + i), 0xfeff]) {
+  for (
+    const point of [
+      0xad,
+      0x34f,
+      0x1806,
+      0x180b,
+      0x180c,
+      0x180d,
+      0x200c,
+      0x200d,
+      0x2060,
+      ...Array.from({ length: 16 }, (_, i) => 0xfe00 + i),
+      0xfeff
+    ]
+  ) {
     expect(prepareUnsafe(String.fromCodePoint(point))).toBe("")
     expect(prepareUnsafe(`a${String.fromCodePoint(point)}b`)).toBe("ab")
   }
@@ -34,9 +55,35 @@ test("normalizes compatibility characters, combining marks, and astral character
   expect(prepareUnsafe("\u1100\u1161")).toBe("가")
 })
 test("rejects each prohibited category, including all plane-ending noncharacters", () => {
-  for (const point of [0x00, 0x7f, 0x85, 0x6dd, 0xe000, 0xf0000, 0x100000, 0xfdd0, 0xfdef, 0xd800, 0xdfff, 0xfff9, 0xfffd + 1, 0x2ff0, 0x2ffb, 0x340, 0x200e, 0x202e, 0xe0001, 0xe0020]) {
+  for (
+    const point of [
+      0x00,
+      0x7f,
+      0x85,
+      0x6dd,
+      0xe000,
+      0xf0000,
+      0x100000,
+      0xfdd0,
+      0xfdef,
+      0xd800,
+      0xdfff,
+      0xfff9,
+      0xfffd + 1,
+      0x2ff0,
+      0x2ffb,
+      0x340,
+      0x200e,
+      0x202e,
+      0xe0001,
+      0xe0020
+    ]
+  ) {
     // U+0340 normalizes to a permitted combining mark before prohibition.
-    if (point === 0x340) { expect(prepareUnsafe("\u0340")).toBe("\u0300"); continue }
+    if (point === 0x340) {
+      expect(prepareUnsafe("\u0340")).toBe("\u0300")
+      continue
+    }
     rejects(String.fromCodePoint(point), "ProhibitedCharacter")
   }
   for (let plane = 0; plane <= 16; plane++) {

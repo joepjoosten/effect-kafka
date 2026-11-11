@@ -1,15 +1,17 @@
-import * as Net from "node:net"
-import { once } from "node:events"
-import { Effect, Exit, Option } from "effect"
-import { recorder } from "./tracer.js"
 import { Producer } from "@effect-kafka/core"
+import { Effect, Exit, Option } from "effect"
+import { once } from "node:events"
+import * as Net from "node:net"
 import { expect, test } from "vitest"
 import { producerLayer, type ProducerOptions } from "../src/index.js"
-import { Reader, Writer, FrameDecoder } from "../src/internal/binary.js"
+import { FrameDecoder, Reader, Writer } from "../src/internal/binary.js"
+import { recorder } from "./tracer.js"
 
-async function broker(options: { produceError?: number; metadataError?: number; wrongCorrelation?: boolean; leaderPort?: number } = {}) {
-  const apis: number[] = []
-  const partitions: number[] = []
+async function broker(
+  options: { produceError?: number; metadataError?: number; wrongCorrelation?: boolean; leaderPort?: number } = {}
+) {
+  const apis: Array<number> = []
+  const partitions: Array<number> = []
   const server = Net.createServer((socket) => {
     const decoder = new FrameDecoder(1024 * 1024)
     socket.on("error", () => {})
@@ -26,7 +28,8 @@ async function broker(options: { produceError?: number; metadataError?: number; 
       if (api === 18) {
         body.i16(0).i32(2).i16(0).i16(3).i16(12).i16(3).i16(0).i16(13)
       } else if (api === 3) {
-        body.i32(0).i32(1).i32(1).string("127.0.0.1").i32(options.leaderPort ?? port).string(null).string("cluster").i32(1)
+        body.i32(0).i32(1).i32(1).string("127.0.0.1").i32(options.leaderPort ?? port).string(null).string("cluster")
+          .i32(1)
           .i32(1).i16(options.metadataError ?? 0).string("events").i8(0).i32(3)
         for (let id = 0; id < 3; id++) body.i16(0).i32(id).i32(1).i32(1).i32(1).i32(1).i32(1)
       } else if (api === 0) {
@@ -54,14 +57,22 @@ async function broker(options: { produceError?: number; metadataError?: number; 
   await once(server, "listening")
   const port = (server.address() as Net.AddressInfo).port
   return {
-    apis, partitions, address: `127.0.0.1:${port}`,
+    apis,
+    partitions,
+    address: `127.0.0.1:${port}`,
     close: () => new Promise<void>((resolve) => server.close(() => resolve()))
   }
 }
-const send = (options: ProducerOptions, partition?: number) => Producer.pipe(
-  Effect.flatMap((producer) => producer.send({ topic: "events", messages: [{ key: "key", value: "value", ...(partition === undefined ? {} : { partition }) }] })),
-  Effect.provide(producerLayer({ metadataRetries: 0, ...options }))
-)
+const send = (options: ProducerOptions, partition?: number) =>
+  Producer.pipe(
+    Effect.flatMap((producer) =>
+      producer.send({
+        topic: "events",
+        messages: [{ key: "key", value: "value", ...(partition === undefined ? {} : { partition }) }]
+      })
+    ),
+    Effect.provide(producerLayer({ metadataRetries: 0, ...options }))
+  )
 
 test("discovers leaders, checks versions, and preserves acknowledged int64 offsets", async () => {
   const b = await broker()
@@ -69,7 +80,9 @@ test("discovers leaders, checks versions, and preserves acknowledged int64 offse
     const reports = await Effect.runPromise(send({ brokers: [b.address] }, 2))
     expect(reports).toEqual([{ topicName: "events", partition: 2, errorCode: 0, baseOffset: "9007199254740993" }])
     expect(b.apis).toEqual([18, 3, 18, 0])
-  } finally { await b.close() }
+  } finally {
+    await b.close()
+  }
 })
 test("bootstrap failover retries reads but never repeats a rejected Produce", async () => {
   const unused = Net.createServer()
@@ -80,9 +93,14 @@ test("bootstrap failover retries reads but never repeats a rejected Produce", as
   const b = await broker({ produceError: 6 })
   try {
     const error = await Effect.runPromise(send({ brokers: [`127.0.0.1:${deadPort}`, b.address] }).pipe(Effect.flip))
-    expect(error).toMatchObject({ operation: "native.produce", cause: { _tag: "KafkaBrokerError", code: 6, topic: "events" } })
+    expect(error).toMatchObject({
+      operation: "native.produce",
+      cause: { _tag: "KafkaBrokerError", code: 6, topic: "events" }
+    })
     expect(b.apis.filter((api) => api === 0)).toHaveLength(1)
-  } finally { await b.close() }
+  } finally {
+    await b.close()
+  }
 })
 test("metadata authorization failures retain the broker code and stop retries", async () => {
   const b = await broker({ metadataError: 29 })
@@ -90,7 +108,9 @@ test("metadata authorization failures retain the broker code and stop retries", 
     const error = await Effect.runPromise(send({ brokers: [b.address], metadataRetries: 2 }).pipe(Effect.flip))
     expect(error.cause).toMatchObject({ code: 29, api: "Metadata" })
     expect(b.apis).toEqual([18, 3])
-  } finally { await b.close() }
+  } finally {
+    await b.close()
+  }
 })
 test("correlation mismatch cannot be mistaken for a successful response", async () => {
   const b = await broker({ wrongCorrelation: true })
@@ -98,30 +118,61 @@ test("correlation mismatch cannot be mistaken for a successful response", async 
     const error = await Effect.runPromise(send({ brokers: [b.address] }).pipe(Effect.flip))
     expect(String(error.cause)).toContain("correlation")
     expect(b.apis).toEqual([18])
-  } finally { await b.close() }
+  } finally {
+    await b.close()
+  }
 })
 test("keyed partitioning is stable across sends", async () => {
   const b = await broker()
   try {
-    await Effect.runPromise(Producer.pipe(Effect.flatMap((p) => Effect.gen(function*() {
-      for (let i = 0; i < 3; i++) yield* p.send({ topic: "events", messages: [{ key: "same", value: "value" }] })
-    })), Effect.provide(producerLayer({ brokers: [b.address] }))))
+    await Effect.runPromise(Producer.pipe(
+      Effect.flatMap((p) =>
+        Effect.gen(function*() {
+          for (let i = 0; i < 3; i++) yield* p.send({ topic: "events", messages: [{ key: "same", value: "value" }] })
+        })
+      ),
+      Effect.provide(producerLayer({ brokers: [b.address] }))
+    ))
     expect(new Set(b.partitions).size).toBe(1)
-  } finally { await b.close() }
+  } finally {
+    await b.close()
+  }
 })
 test("unknown partitions and oversized values fail before any Produce request", async () => {
   const b = await broker()
   try {
-    expect((await Effect.runPromise(send({ brokers: [b.address] }, 99).pipe(Effect.flip))).operation).toBe("native.encode")
-    await Effect.runPromise(Producer.pipe(Effect.flatMap((p) => p.send({ topic: "events", messages: [{ value: Buffer.alloc(1000) }] })), Effect.provide(producerLayer({ brokers: [b.address], maxRequestBytes: 256 })), Effect.flip))
+    expect((await Effect.runPromise(send({ brokers: [b.address] }, 99).pipe(Effect.flip))).operation).toBe(
+      "native.encode"
+    )
+    await Effect.runPromise(
+      Producer.pipe(
+        Effect.flatMap((p) => p.send({ topic: "events", messages: [{ value: Buffer.alloc(1000) }] })),
+        Effect.provide(producerLayer({ brokers: [b.address], maxRequestBytes: 256 })),
+        Effect.flip
+      )
+    )
     expect(b.apis).not.toContain(0)
-  } finally { await b.close() }
+  } finally {
+    await b.close()
+  }
 })
 test("empty sends need no broker, and invalid configuration produces typed errors", async () => {
-  const result = await Effect.runPromise(Producer.pipe(Effect.flatMap((p) => p.send({ topic: "events", messages: [] })), Effect.provide(producerLayer({ brokers: ["localhost:1"] }))))
+  const result = await Effect.runPromise(
+    Producer.pipe(
+      Effect.flatMap((p) => p.send({ topic: "events", messages: [] })),
+      Effect.provide(producerLayer({ brokers: ["localhost:1"] }))
+    )
+  )
   expect(result).toEqual([])
-  for (const options of [{ brokers: [] }, { brokers: ["host"] }, { brokers: ["host:9092"], requestTimeoutMs: -1 }, { brokers: ["host:9092"], acks: 0 }]) {
-    const error = await Effect.runPromise(Producer.pipe(Effect.provide(producerLayer(options as ProducerOptions)), Effect.flip))
+  for (
+    const options of [{ brokers: [] }, { brokers: ["host"] }, { brokers: ["host:9092"], requestTimeoutMs: -1 }, {
+      brokers: ["host:9092"],
+      acks: 0
+    }]
+  ) {
+    const error = await Effect.runPromise(
+      Producer.pipe(Effect.provide(producerLayer(options as ProducerOptions)), Effect.flip)
+    )
     expect(error.operation).toBe("native.config")
   }
 })
@@ -133,37 +184,58 @@ test("routes Produce to the advertised leader rather than the bootstrap socket",
     await Effect.runPromise(send({ brokers: [bootstrap.address] }))
     expect(bootstrap.apis).toEqual([18, 3])
     expect(leader.apis).toEqual([18, 0])
-  } finally { await bootstrap.close(); await leader.close() }
+  } finally {
+    await bootstrap.close()
+    await leader.close()
+  }
 })
-
 
 test("native spans preserve application parents and distinguish broker failures from completed requests", async () => {
   const b = await broker({ produceError: 6 })
   const { spans, tracer } = recorder()
   try {
-    const error = await Effect.runPromise(send({ brokers: [b.address] }, 0).pipe(Effect.withSpan("application.publish"), Effect.withTracer(tracer), Effect.flip))
+    const error = await Effect.runPromise(
+      send({ brokers: [b.address] }, 0).pipe(
+        Effect.withSpan("application.publish"),
+        Effect.withTracer(tracer),
+        Effect.flip
+      )
+    )
     expect(error.cause).toMatchObject({ api: "Produce", code: 6 })
     const find = (name: string) => spans.find((span) => span.name === name)!
     const parent = (name: string) => Option.getOrThrow(find(name).parent).spanId
     expect(parent("kafka.native.send")).toBe(find("application.publish").spanId)
     expect(parent("kafka.native.metadata")).toBe(find("kafka.native.send").spanId)
     expect(parent("kafka.native.produce")).toBe(find("kafka.native.send").spanId)
-    expect(spans.filter((s) => s.name === "kafka.native.request").map((s) => s.attributes.get("kafka.api.key"))).toEqual([18, 3, 18, 0])
+    expect(spans.filter((s) => s.name === "kafka.native.request").map((s) => s.attributes.get("kafka.api.key")))
+      .toEqual([18, 3, 18, 0])
     for (const span of spans) {
       expect(span.status._tag).toBe("Ended")
       if (span.status._tag === "Ended") {
         expect(span.status.endTime >= span.status.startTime).toBe(true)
-        expect(Exit.isFailure(span.status.exit)).toBe(["application.publish", "kafka.native.send", "kafka.native.produce"].includes(span.name))
+        expect(Exit.isFailure(span.status.exit)).toBe(
+          ["application.publish", "kafka.native.send", "kafka.native.produce"].includes(span.name)
+        )
       }
     }
     expect(find("kafka.native.produce").attributes.get("messaging.destination.name")).toBe("events")
     expect(b.apis.filter((api) => api === 0)).toHaveLength(1)
-  } finally { await b.close() }
+  } finally {
+    await b.close()
+  }
 })
 test("tracing does not add payloads or headers to attributes and can be disabled", async () => {
   const b = await broker()
   const { spans, tracer } = recorder()
-  const program = Producer.pipe(Effect.flatMap((p) => p.send({ topic: "events", messages: [{ key: "private-key", value: "private-value", headers: { traceparent: "private-header" } }] })), Effect.provide(producerLayer({ brokers: [b.address] })))
+  const program = Producer.pipe(
+    Effect.flatMap((p) =>
+      p.send({
+        topic: "events",
+        messages: [{ key: "private-key", value: "private-value", headers: { traceparent: "private-header" } }]
+      })
+    ),
+    Effect.provide(producerLayer({ brokers: [b.address] }))
+  )
   try {
     const reports = await Effect.runPromise(program.pipe(Effect.withTracer(tracer)))
     expect(reports[0]?.errorCode).toBe(0)
@@ -172,5 +244,7 @@ test("tracing does not add payloads or headers to attributes and can be disabled
     const count = spans.length
     await Effect.runPromise(program.pipe(Effect.withTracer(tracer), Effect.withTracerEnabled(false)))
     expect(spans).toHaveLength(count)
-  } finally { await b.close() }
+  } finally {
+    await b.close()
+  }
 })

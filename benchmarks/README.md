@@ -40,18 +40,18 @@ without an exporter by default. KafkaJS persistent connections and native
 per-request sockets are intentionally preserved: the comparison measures the
 actual migration tradeoff. Native metadata retries are disabled for comparison.
 
-| Environment variable | Default |
-| --- | --- |
-| `BENCH_SAMPLES` | 100 single sends and 100 batches per measurement |
-| `BENCH_REPETITIONS` | 3 |
-| `BENCH_WARMUP` | 10 single sends |
-| `BENCH_BATCH_SIZE` | 100 records |
-| `BENCH_CONCURRENCY` | 8 |
-| `BENCH_PAYLOAD_BYTES` | 256 |
-| `BENCH_TRACING` | 1; set 0 to disable Effect tracing |
-| `BENCH_MODES` | All six modes; comma-separated names from `run.mjs` |
-| `BENCH_OUTPUT` | `.benchmark` |
-| `BENCH_BROKER_VERSION` | Unknown; set the actual broker version |
+| Environment variable   | Default                                             |
+| ---------------------- | --------------------------------------------------- |
+| `BENCH_SAMPLES`        | 100 single sends and 100 batches per measurement    |
+| `BENCH_REPETITIONS`    | 3                                                   |
+| `BENCH_WARMUP`         | 10 single sends                                     |
+| `BENCH_BATCH_SIZE`     | 100 records                                         |
+| `BENCH_CONCURRENCY`    | 8                                                   |
+| `BENCH_PAYLOAD_BYTES`  | 256                                                 |
+| `BENCH_TRACING`        | 1; set 0 to disable Effect tracing                  |
+| `BENCH_MODES`          | All six modes; comma-separated names from `run.mjs` |
+| `BENCH_OUTPUT`         | `.benchmark`                                        |
+| `BENCH_BROKER_VERSION` | Unknown; set the actual broker version              |
 
 External disposable brokers can override `BENCH_ADMIN_BROKER` (plaintext control
 plane), `BENCH_PLAINTEXT_BROKER`, `BENCH_TLS_BROKER`, `BENCH_SASL_BROKER`,
