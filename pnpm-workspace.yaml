@@ -1,6 +1,11 @@
 packages:
   - "packages/*"
-onlyBuiltDependencies:
-  - "@confluentinc/kafka-javascript"
+allowBuilds:
+  "@confluentinc/kafka-javascript": true
+  esbuild: false
 overrides:
   source-map-js: ^1.2.2
+minimumReleaseAgeExclude:
+  - effect@4.1.4
+  - "@effect/vitest@4.1.4"
+  - vite@8.3.8
