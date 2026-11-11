@@ -1,5 +1,11 @@
 # @effect-kafka/core
 
+## 0.6.1
+
+### Patch Changes
+
+- 279f27f: Build and test against `effect@4.1.4`. The `effect` peer range is still `^4.0.0`.
+
 ## 0.6.0
 
 ### Minor Changes
