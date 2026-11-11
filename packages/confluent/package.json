@@ -1,6 +1,6 @@
 {
   "name": "@effect-kafka/confluent",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "type": "module",
   "license": "MIT",
   "description": "Scoped Confluent Kafka producer and consumer layers for Effect",
