@@ -2,3 +2,5 @@ packages:
   - "packages/*"
 onlyBuiltDependencies:
   - "@confluentinc/kafka-javascript"
+overrides:
+  source-map-js: ^1.2.2
