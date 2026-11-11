@@ -1,5 +1,11 @@
 # @effect-kafka/core
 
+## 0.6.2
+
+### Patch Changes
+
+- 92fa6d7: Internal: lint with oxlint, format with dprint and type check with `@effect/tsgo`, matching the Effect repository's tooling. Behaviour and public types are unchanged.
+
 ## 0.6.1
 
 ### Patch Changes
