@@ -13,15 +13,17 @@ pnpm add @effect-kafka/core @effect-kafka/native effect@4.1.4
 ## Produce
 
 ```ts
-import { Effect } from "effect"
 import { Consumer, Producer } from "@effect-kafka/core"
 import * as Native from "@effect-kafka/native"
+import { Effect } from "effect"
 
 const program = Producer.pipe(
-  Effect.flatMap((producer) => producer.send({
-    topic: "events",
-    messages: [{ key: "event-1", value: "hello" }]
-  })),
+  Effect.flatMap((producer) =>
+    producer.send({
+      topic: "events",
+      messages: [{ key: "event-1", value: "hello" }]
+    })
+  ),
   Effect.provide(Native.producerLayer({
     brokers: ["kafka:29092"],
     compression: "gzip",
@@ -41,10 +43,12 @@ Murmur2 keyed partitioning. Unkeyed messages use round-robin partitioning.
 
 ```ts
 const program = Consumer.pipe(
-  Effect.flatMap((consumer) => consumer.consume(
-    { topics: ["events"], fromBeginning: true, partitionsConsumedConcurrently: 2 },
-    (record) => Effect.log({ offset: record.offset, value: record.value })
-  )),
+  Effect.flatMap((consumer) =>
+    consumer.consume(
+      { topics: ["events"], fromBeginning: true, partitionsConsumedConcurrently: 2 },
+      (record) => Effect.log({ offset: record.offset, value: record.value })
+    )
+  ),
   Effect.provide(Native.consumerLayer({
     brokers: ["kafka:29092"],
     groupId: "my-app"
@@ -106,8 +110,8 @@ available through the root `SaslPrep` namespace or the `@effect-kafka/native/Sas
 subpath:
 
 ```ts
-import { Effect } from "effect"
 import { SaslPrep } from "@effect-kafka/native"
+import { Effect } from "effect"
 // Alternatively: import * as SaslPrep from "@effect-kafka/native/SaslPrep"
 
 const prepared = await Effect.runPromise(SaslPrep.prepare("I\u00adX")) // "IX"
@@ -133,9 +137,9 @@ Regenerate or verify the tables with `python3 scripts/generate-saslprep-tables.p
 
 ```ts
 const program = Native.Transactions.pipe(
-  Effect.flatMap((transactions) => transactions.withTransaction((tx) =>
-    tx.send({ topic: "events", messages: [{ value: "atomic" }] })
-  )),
+  Effect.flatMap((transactions) =>
+    transactions.withTransaction((tx) => tx.send({ topic: "events", messages: [{ value: "atomic" }] }))
+  ),
   Effect.provide(Native.transactionLayer({
     brokers: ["kafka:29092"],
     transactionalId: "my-app-worker-0",
@@ -157,15 +161,16 @@ run both operations within one transaction:
 
 ```ts
 consumer.consume({ topics: ["input"] }, (record) =>
-  transactions.withTransaction((tx) => Effect.gen(function*() {
-    yield* tx.send({ topic: "output", messages: [{ value: record.value }] })
-    yield* tx.sendOffsets(record.groupMetadata!, [{
-      topic: record.topic,
-      partition: record.partition,
-      offset: (BigInt(record.offset) + 1n).toString()
-    }])
-  }))
-)
+  transactions.withTransaction((tx) =>
+    Effect.gen(function*() {
+      yield* tx.send({ topic: "output", messages: [{ value: record.value }] })
+      yield* tx.sendOffsets(record.groupMetadata!, [{
+        topic: record.topic,
+        partition: record.partition,
+        offset: (BigInt(record.offset) + 1n).toString()
+      }])
+    })
+  ))
 ```
 
 `sendOffsets` requires active native group metadata, including generation and

@@ -77,75 +77,89 @@ export interface ConsumerDriver {
   readonly subscribe: () => Promise<void>
   /** Resolves when started, not when consumption ends. Await each handler. */
   readonly run: (handler: (record: ConsumerRecord) => Promise<void>) => Promise<void>
-  readonly onFailure?: (handler: (cause: unknown) => void) => (() => void)
+  readonly onFailure?: (handler: (cause: unknown) => void) => () => void
 }
 export const attempt = <A>(operation: string, run: () => Promise<A>): Effect.Effect<A, KafkaError> =>
   Effect.tryPromise({ try: run, catch: (cause) => new KafkaError({ operation, cause }) })
 
 /** Acquires a producer and releases it when the layer's scope closes. */
 export const producerLayer = (create: () => ProducerDriver): Layer.Layer<Producer, KafkaError> =>
-  Layer.effect(Producer, Effect.gen(function*() {
-    const driver = yield* Effect.acquireRelease(
-      Effect.try({ try: create, catch: (cause) => new KafkaError({ operation: "producer.create", cause }) }),
-      (driver) => attempt("producer.disconnect", () => driver.disconnect()).pipe(Effect.orDie)
-    )
-    // Drivers do not support AbortSignal for connect: wait for settlement before cleanup.
-    yield* attempt("producer.connect", () => driver.connect()).pipe(Effect.uninterruptible)
-    return Producer.of({ send: (record) => attempt("producer.send", () => driver.send(record)) })
-  }))
+  Layer.effect(
+    Producer,
+    Effect.gen(function*() {
+      const driver = yield* Effect.acquireRelease(
+        Effect.try({ try: create, catch: (cause) => new KafkaError({ operation: "producer.create", cause }) }),
+        (driver) => attempt("producer.disconnect", () => driver.disconnect()).pipe(Effect.orDie)
+      )
+      // Drivers do not support AbortSignal for connect: wait for settlement before cleanup.
+      yield* attempt("producer.connect", () => driver.connect()).pipe(Effect.uninterruptible)
+      return Producer.of({ send: (record) => attempt("producer.send", () => driver.send(record)) })
+    })
+  )
 
 /** Builds an Effect consumer while preserving handler errors and required services. */
 export const consumerLayer = (create: (subscription: Subscription) => ConsumerDriver): Layer.Layer<Consumer> =>
-  Layer.succeed(Consumer, Consumer.of({
-    consume: <E, R>(subscription: Subscription, handler: (record: ConsumerRecord) => Effect.Effect<void, E, R>) =>
-      Effect.scoped(Effect.gen(function*() {
-        if (subscription.topics.length === 0) {
-          return yield* Effect.fail(new KafkaError({ operation: "consumer.subscribe", cause: new Error("At least one topic is required") }))
-        }
-        const context = yield* Effect.context<R>()
-        const driver = yield* Effect.acquireRelease(
-          Effect.try({ try: () => create(subscription), catch: (cause) => new KafkaError({ operation: "consumer.create", cause }) }),
-          (driver) => attempt("consumer.disconnect", () => driver.disconnect()).pipe(Effect.orDie)
-        )
-        yield* attempt("consumer.connect", () => driver.connect()).pipe(Effect.uninterruptible)
-        yield* attempt("consumer.subscribe", () => driver.subscribe()).pipe(Effect.uninterruptible)
-        let cleanup: Effect.Effect<void> = Effect.void
-        return yield* Effect.callback<never, KafkaError | E>((resume, signal) => {
-          let ended = false
-          const controller = new AbortController()
-          const pending = new Set<Promise<unknown>>()
-          const abort = () => controller.abort()
-          signal.addEventListener("abort", abort, { once: true })
-          const fail = (cause: unknown) => {
-            if (!ended) {
-              ended = true
-              resume(Effect.fail(new KafkaError({ operation: "consumer.run", cause })))
-            }
+  Layer.succeed(
+    Consumer,
+    Consumer.of({
+      consume: <E, R>(subscription: Subscription, handler: (record: ConsumerRecord) => Effect.Effect<void, E, R>) =>
+        Effect.scoped(Effect.gen(function*() {
+          if (subscription.topics.length === 0) {
+            return yield* new KafkaError({
+              operation: "consumer.subscribe",
+              cause: new Error("At least one topic is required")
+            })
           }
-          const remove = driver.onFailure?.(fail)
-          const run = Effect.runPromiseExitWith(context)
-          // The microtask also captures synchronous driver.run exceptions.
-          void Promise.resolve().then(() => driver.run(async (record) => {
-            if (ended || signal.aborted) throw new Error("Consumer is stopping")
-            const task = run(Effect.suspend(() => handler(record)), { signal: controller.signal })
-            pending.add(task)
-            const exit = await task.finally(() => pending.delete(task))
-            if (Exit.isFailure(exit)) {
+          const context = yield* Effect.context<R>()
+          const driver = yield* Effect.acquireRelease(
+            Effect.try({
+              try: () => create(subscription),
+              catch: (cause) => new KafkaError({ operation: "consumer.create", cause })
+            }),
+            (driver) => attempt("consumer.disconnect", () => driver.disconnect()).pipe(Effect.orDie)
+          )
+          yield* attempt("consumer.connect", () => driver.connect()).pipe(Effect.uninterruptible)
+          yield* attempt("consumer.subscribe", () => driver.subscribe()).pipe(Effect.uninterruptible)
+          let cleanup: Effect.Effect<void> = Effect.void
+          return yield* Effect.callback<never, KafkaError | E>((resume, signal) => {
+            let ended = false
+            const controller = new AbortController()
+            const pending = new Set<Promise<unknown>>()
+            const abort = () => controller.abort()
+            signal.addEventListener("abort", abort, { once: true })
+            const fail = (cause: unknown) => {
               if (!ended) {
                 ended = true
-                resume(Effect.failCause(exit.cause))
+                resume(Effect.fail(new KafkaError({ operation: "consumer.run", cause })))
               }
-              // Reject so the driver cannot acknowledge a failed/interrupted record.
-              throw new Error("Kafka message handler failed", { cause: exit.cause })
             }
-          })).catch(fail)
-          cleanup = Effect.promise(async () => {
-            ended = true
-            controller.abort()
-            await Promise.allSettled(pending)
-            signal.removeEventListener("abort", abort)
-            remove?.()
-          })
-        }).pipe(Effect.ensuring(Effect.suspend(() => cleanup)))
-      }))
-  }))
+            const remove = driver.onFailure?.(fail)
+            const run = Effect.runPromiseExitWith(context)
+            // The microtask also captures synchronous driver.run exceptions.
+            void Promise.resolve().then(() =>
+              driver.run(async (record) => {
+                if (ended || signal.aborted) throw new Error("Consumer is stopping")
+                const task = run(Effect.suspend(() => handler(record)), { signal: controller.signal })
+                pending.add(task)
+                const exit = await task.finally(() => pending.delete(task))
+                if (Exit.isFailure(exit)) {
+                  if (!ended) {
+                    ended = true
+                    resume(Effect.failCause(exit.cause))
+                  }
+                  // Reject so the driver cannot acknowledge a failed/interrupted record.
+                  throw new Error("Kafka message handler failed", { cause: exit.cause })
+                }
+              })
+            ).catch(fail)
+            cleanup = Effect.promise(async () => {
+              ended = true
+              controller.abort()
+              await Promise.allSettled(pending)
+              signal.removeEventListener("abort", abort)
+              remove?.()
+            })
+          }).pipe(Effect.ensuring(Effect.suspend(() => cleanup)))
+        }))
+    })
+  )

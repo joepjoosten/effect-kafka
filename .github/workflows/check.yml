@@ -18,8 +18,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
       - run: python3 scripts/generate-saslprep-tables.py --check
+      - run: pnpm lint
       - run: pnpm build
       - run: pnpm check
+      - run: pnpm check-tsc
       - run: pnpm test
       - run: pnpm check:examples
       - run: bash scripts/pack-smoke.sh

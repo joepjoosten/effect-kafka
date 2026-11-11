@@ -1,6 +1,6 @@
-import { Effect } from "effect"
 import { Producer } from "@effect-kafka/core"
 import * as Native from "@effect-kafka/native"
+import { Effect } from "effect"
 
 export const program = Producer.pipe(
   Effect.flatMap((producer) => producer.send({ topic: "events", messages: [{ key: "1", value: "hello" }] })),

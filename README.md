@@ -4,12 +4,12 @@
 
 Effect-native Kafka producer and consumer services for **Effect 4.1.4**.
 
-| Package | Responsibility |
-| --- | --- |
-| `@effect-kafka/core` | Shared services, message types, typed errors, and adapter contracts |
-| `@effect-kafka/kafkajs` | KafkaJS producer and consumer layers |
-| `@effect-kafka/confluent` | Confluent's librdkafka-backed producer and consumer layers |
-| `@effect-kafka/native` | Native producers, consumers, SASL, compression and transactions |
+| Package                   | Responsibility                                                      |
+| ------------------------- | ------------------------------------------------------------------- |
+| `@effect-kafka/core`      | Shared services, message types, typed errors, and adapter contracts |
+| `@effect-kafka/kafkajs`   | KafkaJS producer and consumer layers                                |
+| `@effect-kafka/confluent` | Confluent's librdkafka-backed producer and consumer layers          |
+| `@effect-kafka/native`    | Native producers, consumers, SASL, compression and transactions     |
 
 Kafka transport is independent of serialization. Use JSON, bytes, Protobuf, or the
 `Uint8Array` produced by [`@effect-avro/kafka`](https://github.com/joepjoosten/effect-avro).
@@ -32,9 +32,9 @@ The Confluent driver needs native bindings. With pnpm, allow the
 ## Produce with KafkaJS
 
 ```ts
-import { Effect } from "effect"
 import { Producer } from "@effect-kafka/core"
 import * as KafkaJS from "@effect-kafka/kafkajs"
+import { Effect } from "effect"
 
 const live = KafkaJS.producerLayer({
   client: { brokers: ["kafka:29092"] },
@@ -63,9 +63,9 @@ partitions, timestamps, and repeated headers, and returns delivery reports.
 ## Consume with KafkaJS
 
 ```ts
-import { Effect } from "effect"
 import { Consumer } from "@effect-kafka/core"
 import * as KafkaJS from "@effect-kafka/kafkajs"
+import { Effect } from "effect"
 
 const program = Effect.gen(function*() {
   const consumer = yield* Consumer
